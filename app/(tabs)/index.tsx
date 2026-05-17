@@ -167,19 +167,42 @@ export default function OverviewScreen() {
       {categoryBreakdown.length > 0 && (
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Expense Categories</Text>
-          <PieChart
-            data={categoryBreakdown}
-            width={350}
-            height={220}
-            chartConfig={{
-              color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-            }}
-            accessor="amount"
-            backgroundColor="transparent"
-            paddingLeft="15"
-            absolute
-          />
+          <View style={styles.donutRow}>
+            <View style={styles.donutWrapper}>
+              <PieChart
+                data={categoryBreakdown}
+                width={160}
+                height={160}
+                chartConfig={{
+                  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+                }}
+                accessor="amount"
+                backgroundColor="transparent"
+                paddingLeft="0"
+                center={[40, 0]}
+                hasLegend={false}
+                absolute
+              />
+              <View style={styles.donutHole}>
+                <Text style={styles.donutHoleLabel}>Total</Text>
+                <Text style={styles.donutHoleValue}>
+                  ${totalExpenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.customLegend}>
+              {categoryBreakdown.map((item, index) => (
+                <View key={index} style={styles.legendItem}>
+                  <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                  <Text style={styles.legendName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.legendValue}>
+                    ${item.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
       )}
 
@@ -409,6 +432,71 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
+    marginBottom: 16,
+  },
+  donutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  donutWrapper: {
+    position: 'relative',
+    width: 160,
+    height: 160,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  donutHole: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  donutHoleLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#64748b',
+    marginBottom: 2,
+  },
+  donutHoleValue: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#0f172a',
+  },
+  customLegend: {
+    flex: 1,
+    paddingLeft: 24,
+    justifyContent: 'center',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  legendColor: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  legendName: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    color: '#64748b',
+  },
+  legendValue: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#0f172a',
   },
   filterButtons: {
     flexDirection: 'row',
