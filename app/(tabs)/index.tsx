@@ -1,14 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useFinanceStore } from '@/store/financeStore';
-import { format, subDays, subMonths, subYears, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
+import { endOfDay, format, isWithinInterval, startOfDay, subDays, subMonths, subYears } from 'date-fns';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LineChart, PieChart } from 'react-native-chart-kit';
 
 type TimeFilter = 'week' | 'month' | 'year';
 
 export default function OverviewScreen() {
   const { transactions } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   // Filter transactions based on selected time period
   const filteredTransactions = useMemo(() => {
@@ -27,7 +30,7 @@ export default function OverviewScreen() {
         break;
     }
 
-    return transactions.filter(t => 
+    return transactions.filter(t =>
       isWithinInterval(new Date(t.date), {
         start: startOfDay(startDate),
         end: endOfDay(now)
@@ -110,27 +113,58 @@ export default function OverviewScreen() {
         <Text style={styles.date}>{format(new Date(), 'MMMM yyyy')}</Text>
       </View>
 
-      <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Total Balance</Text>
-        <Text style={styles.balanceAmount}>${totalBalance.toFixed(2)}</Text>
-      </View>
+      <LinearGradient
+        colors={['#103783', '#091026', '#091026']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.balanceCard}
+      >
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Income</Text>
-          <Text style={[styles.statAmount, { color: '#059669' }]}>
-            ${totalIncome.toFixed(2)}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Expenses</Text>
-          <Text style={[styles.statAmount, { color: '#dc2626' }]}>
-            ${totalExpenses.toFixed(2)}
-          </Text>
-        </View>
-      </View>
 
-            {categoryBreakdown.length > 0 && (
+        <View style={styles.balanceSection}>
+          <Text style={styles.balanceLabel}>Total Balance</Text>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceAmount}>
+              {isBalanceVisible ? `$${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••••'}
+            </Text>
+            <TouchableOpacity onPress={() => setIsBalanceVisible(!isBalanceVisible)} style={styles.eyeIcon}>
+              <Ionicons name={isBalanceVisible ? "eye-off-outline" : "eye-outline"} size={24} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.cardBottomRow}>
+          <View style={styles.monthlyStat}>
+            <Text style={styles.monthlyStatLabel}>Monthly Income</Text>
+            <View style={styles.monthlyStatValueRow}>
+              <Text style={styles.monthlyStatAmount}>
+                ${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+              <View style={[styles.percentageBadge, { backgroundColor: 'rgba(20, 184, 166, 0.15)' }]}>
+                <Ionicons name="arrow-up" size={10} color="#14b8a6" style={{ transform: [{ rotate: '45deg' }] }} />
+                <Text style={[styles.percentageText, { color: '#14b8a6' }]}>5.2%</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.monthlyStat}>
+            <Text style={styles.monthlyStatLabel}>Monthly Expense</Text>
+            <View style={styles.monthlyStatValueRow}>
+              <Text style={styles.monthlyStatAmount}>
+                ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+              <View style={[styles.percentageBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                <Ionicons name="arrow-down" size={10} color="#ef4444" style={{ transform: [{ rotate: '-45deg' }] }} />
+                <Text style={[styles.percentageText, { color: '#ef4444' }]}>2.6%</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+
+      {categoryBreakdown.length > 0 && (
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Expense Categories</Text>
           <PieChart
@@ -149,7 +183,7 @@ export default function OverviewScreen() {
         </View>
       )}
 
-      
+
 
       <View style={styles.chartContainer}>
         <View style={styles.chartHeader}>
@@ -239,79 +273,117 @@ function getColorForIndex(index: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f8fafc',
   },
   header: {
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fafc',
   },
   title: {
     fontSize: 24,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
+    fontFamily: 'Inter_700Bold',
+    color: '#0f172a',
   },
   date: {
-    fontSize: 16,
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: '#64748b',
     marginTop: 4,
   },
   balanceCard: {
-    backgroundColor: '#6366f1',
-    margin: 20,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: '#6366f1',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  balanceLabel: {
-    fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    color: '#e0e7ff',
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontFamily: 'Inter_700Bold',
-    color: '#ffffff',
-    marginTop: 8,
-  },
-  statsContainer: {
+  cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  accountSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  accountSelectorText: {
+    color: '#E2E8F0',
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    marginRight: 6,
+  },
+  balanceSection: {
+    marginBottom: 24,
+  },
+  balanceLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    color: '#94a3b8',
+    marginBottom: 8,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceAmount: {
+    fontSize: 40,
+    fontFamily: 'Inter_700Bold',
+    color: '#ffffff',
+    letterSpacing: -1,
+    marginRight: 12,
+  },
+  eyeIcon: {
+    padding: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 20,
   },
-  statCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
+  cardBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  monthlyStat: {
     flex: 1,
-    marginHorizontal: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  statLabel: {
-    fontSize: 14,
+  monthlyStatLabel: {
+    fontSize: 12,
     fontFamily: 'Inter_500Medium',
-    color: '#6b7280',
+    color: '#94a3b8',
+    marginBottom: 6,
   },
-  statAmount: {
-    fontSize: 20,
+  monthlyStatValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  monthlyStatAmount: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#ffffff',
+    marginRight: 8,
+  },
+  percentageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  percentageText: {
+    fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
-    marginTop: 4,
+    marginLeft: 2,
   },
   chartContainer: {
     backgroundColor: '#ffffff',
