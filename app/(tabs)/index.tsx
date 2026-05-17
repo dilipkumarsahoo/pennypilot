@@ -1,4 +1,5 @@
 import { useFinanceStore } from '@/store/financeStore';
+import { useThemeStore } from '@/store/themeStore';
 import { Ionicons } from '@expo/vector-icons';
 import { endOfDay, format, isWithinInterval, startOfDay, subDays, subMonths, subYears } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +11,7 @@ type TimeFilter = 'week' | 'month' | 'year';
 
 export default function OverviewScreen() {
   const { transactions } = useFinanceStore();
+  const { colors } = useThemeStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
@@ -107,17 +109,17 @@ export default function OverviewScreen() {
   }, [filteredTransactions]);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Financial Overview</Text>
-        <Text style={styles.date}>{format(new Date(), 'MMMM yyyy')}</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Financial Overview</Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>{format(new Date(), 'MMMM yyyy')}</Text>
       </View>
 
       <LinearGradient
-        colors={['#103783', '#091026', '#091026']}
+        colors={[colors.gradientStart, colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.balanceCard}
+        style={[styles.balanceCard, { shadowColor: colors.primary }]}
       >
 
 
@@ -165,8 +167,8 @@ export default function OverviewScreen() {
       </LinearGradient>
 
       {categoryBreakdown.length > 0 && (
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Expense Categories</Text>
+        <View style={[styles.chartContainer, { backgroundColor: colors.card, shadowColor: colors.border }]}>
+          <Text style={[styles.chartTitle, { color: colors.text }]}>Expense Categories</Text>
           <View style={styles.donutRow}>
             <View style={styles.donutWrapper}>
               <PieChart
@@ -174,7 +176,7 @@ export default function OverviewScreen() {
                 width={160}
                 height={160}
                 chartConfig={{
-                  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+                  color: (opacity = 1) => colors.primary,
                 }}
                 accessor="amount"
                 backgroundColor="transparent"
@@ -183,9 +185,9 @@ export default function OverviewScreen() {
                 hasLegend={false}
                 absolute
               />
-              <View style={styles.donutHole}>
-                <Text style={styles.donutHoleLabel}>Total</Text>
-                <Text style={styles.donutHoleValue}>
+              <View style={[styles.donutHole, { backgroundColor: colors.card, shadowColor: colors.border }]}>
+                <Text style={[styles.donutHoleLabel, { color: colors.textSecondary }]}>Total</Text>
+                <Text style={[styles.donutHoleValue, { color: colors.text }]}>
                   ${totalExpenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                 </Text>
               </View>
@@ -195,8 +197,8 @@ export default function OverviewScreen() {
               {categoryBreakdown.map((item, index) => (
                 <View key={index} style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-                  <Text style={styles.legendName} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.legendValue}>
+                  <Text style={[styles.legendName, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text>
+                  <Text style={[styles.legendValue, { color: colors.text }]}>
                     ${item.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </Text>
                 </View>
@@ -206,33 +208,31 @@ export default function OverviewScreen() {
         </View>
       )}
 
-
-
-      <View style={styles.chartContainer}>
+      <View style={[styles.chartContainer, { backgroundColor: colors.card, shadowColor: colors.border }]}>
         <View style={styles.chartHeader}>
-          <Text style={styles.chartTitle}>Income vs Expenses</Text>
-          <View style={styles.filterButtons}>
+          <Text style={[styles.chartTitle, { color: colors.text }]}>Income vs Expenses</Text>
+          <View style={[styles.filterButtons, { backgroundColor: colors.background }]}>
             <TouchableOpacity
-              style={[styles.filterButton, timeFilter === 'week' && styles.activeFilter]}
+              style={[styles.filterButton, timeFilter === 'week' && [styles.activeFilter, { backgroundColor: colors.card, shadowColor: colors.border }]]}
               onPress={() => setTimeFilter('week')}
             >
-              <Text style={[styles.filterText, timeFilter === 'week' && styles.activeFilterText]}>
+              <Text style={[styles.filterText, { color: colors.textSecondary }, timeFilter === 'week' && [styles.activeFilterText, { color: colors.primary }]]}>
                 Week
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.filterButton, timeFilter === 'month' && styles.activeFilter]}
+              style={[styles.filterButton, timeFilter === 'month' && [styles.activeFilter, { backgroundColor: colors.card, shadowColor: colors.border }]]}
               onPress={() => setTimeFilter('month')}
             >
-              <Text style={[styles.filterText, timeFilter === 'month' && styles.activeFilterText]}>
+              <Text style={[styles.filterText, { color: colors.textSecondary }, timeFilter === 'month' && [styles.activeFilterText, { color: colors.primary }]]}>
                 Month
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.filterButton, timeFilter === 'year' && styles.activeFilter]}
+              style={[styles.filterButton, timeFilter === 'year' && [styles.activeFilter, { backgroundColor: colors.card, shadowColor: colors.border }]]}
               onPress={() => setTimeFilter('year')}
             >
-              <Text style={[styles.filterText, timeFilter === 'year' && styles.activeFilterText]}>
+              <Text style={[styles.filterText, { color: colors.textSecondary }, timeFilter === 'year' && [styles.activeFilterText, { color: colors.primary }]]}>
                 Year
               </Text>
             </TouchableOpacity>
@@ -243,17 +243,17 @@ export default function OverviewScreen() {
           width={350}
           height={220}
           chartConfig={{
-            backgroundColor: '#ffffff',
-            backgroundGradientFrom: '#ffffff',
-            backgroundGradientTo: '#ffffff',
+            backgroundColor: colors.card,
+            backgroundGradientFrom: colors.card,
+            backgroundGradientTo: colors.card,
             decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+            color: (opacity = 1) => colors.border,
+            labelColor: (opacity = 1) => colors.textSecondary,
             style: {
               borderRadius: 16,
             },
             propsForDots: {
-              r: '6',
+              r: '4',
               strokeWidth: '2',
             },
           }}

@@ -4,12 +4,14 @@ import { useFinanceStore, Goal } from "@/store/financeStore";
 import { Plus, Calendar } from "lucide-react-native";
 import { format } from "date-fns";
 import { getGoalsFromDB } from "@/services/database";
+import { useThemeStore } from "@/store/themeStore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Button from "@/components/Button";
 
 export default function GoalsScreen() {
   const { goals, addGoal, updateGoalProgress, deleteGoal, setGoals } =
     useFinanceStore();
+  const { colors } = useThemeStore();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
@@ -97,36 +99,36 @@ export default function GoalsScreen() {
     };
 
     return (
-      <View style={styles.goalCard}>
+      <View style={[styles.goalCard, { backgroundColor: colors.card, shadowColor: colors.border }]}>
         <View style={styles.goalHeader}>
-          <Text style={styles.goalName}>{item.name}</Text>
-          <Text style={styles.goalDeadline}>
+          <Text style={[styles.goalName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.goalDeadline, { color: colors.textSecondary }]}>
             Due {format(new Date(item.deadline), "MMM dd, yyyy")}
           </Text>
         </View>
 
         <View style={styles.progressContainer}>
-          <View style={styles.progressBackground}>
+          <View style={[styles.progressBackground, { backgroundColor: colors.border }]}>
             <View
               style={[
                 styles.progressBar,
-                { width: `${Math.min(progress, 100)}%` },
+                { width: `${Math.min(progress, 100)}%`, backgroundColor: colors.primary },
               ]}
             />
           </View>
-          <Text style={styles.progressText}>
+          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
             ${item.currentAmount.toFixed(2)} of ${item.targetAmount.toFixed(2)}{" "}
             ({progress.toFixed(1)}%)
           </Text>
         </View>
 
-        <Text style={styles.remainingText}>${remaining.toFixed(2)} to go</Text>
+        <Text style={[styles.remainingText, { color: colors.success }]}>${remaining.toFixed(2)} to go</Text>
 
         <View style={styles.buttonContainer}>
           {remaining > 0 ? (
             <>
               <TouchableOpacity
-                style={[styles.contributeButton, isLoading && styles.disabledButton, { flex: 1 }]}
+                style={[styles.contributeButton, isLoading && styles.disabledButton, { flex: 1, backgroundColor: colors.primary }]}
                 onPress={openContributionModal}
                 disabled={isLoading}
               >
@@ -142,7 +144,7 @@ export default function GoalsScreen() {
               </TouchableOpacity>
             </>
           ) : (
-            <View style={styles.completedBadge}>
+            <View style={[styles.completedBadge, { backgroundColor: colors.success }]}>
               <Text style={styles.completedText}>🎉 Completed</Text>
             </View>
           )}
@@ -152,11 +154,11 @@ export default function GoalsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Savings Goals</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Savings Goals</Text>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
           onPress={() => setShowForm(true)}
         >
           <Plus size={24} color="#ffffff" />
@@ -164,15 +166,17 @@ export default function GoalsScreen() {
       </View>
 
       {showForm && (
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: colors.card, shadowColor: colors.border }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            placeholderTextColor={colors.textSecondary}
             placeholder="Goal Name"
             value={name}
             onChangeText={setName}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            placeholderTextColor={colors.textSecondary}
             placeholder="Target Amount"
             value={targetAmount}
             onChangeText={(text) => {
@@ -274,10 +278,11 @@ export default function GoalsScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Contribution Amount</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Enter Contribution Amount</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholderTextColor={colors.textSecondary}
               placeholder="Amount"
               keyboardType="numeric"
               value={modalAmount}
@@ -291,7 +296,7 @@ export default function GoalsScreen() {
             />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity
-                style={[styles.submitButton, isLoading && styles.disabledButton]}
+                style={[styles.submitButton, isLoading && styles.disabledButton, { backgroundColor: colors.primary, flex: 1 }]}
                 onPress={() => {
                   const numericAmount = parseFloat(modalAmount);
                   const goal = goals.find((g) => g.id === selectedGoalId);

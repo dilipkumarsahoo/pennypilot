@@ -1,6 +1,7 @@
 import Button from "@/components/Button";
 import { getBudgetsFromDB } from "@/services/database";
 import { Budget, useFinanceStore } from "@/store/financeStore";
+import { useThemeStore } from "@/store/themeStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Plus } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -27,6 +28,7 @@ export default function BudgetScreen() {
     loadTransactions,
     deleteTransactionCategory,
   } = useFinanceStore();
+  const { colors } = useThemeStore();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [category, setCategory] = useState("");
@@ -146,46 +148,46 @@ export default function BudgetScreen() {
     const remaining = item.amount - item.spent;
 
     return (
-      <View style={styles.budgetCard}>
+      <View style={[styles.budgetCard, { backgroundColor: colors.card, shadowColor: colors.border }]}>
         <View style={styles.budgetHeader}>
-          <Text style={styles.budgetCategory}>{item.category}</Text>
-          <Text style={styles.budgetAmount}>${item.amount.toFixed(2)}</Text>
+          <Text style={[styles.budgetCategory, { color: colors.text }]}>{item.category}</Text>
+          <Text style={[styles.budgetAmount, { color: colors.text }]}>${item.amount.toFixed(2)}</Text>
         </View>
 
         <View style={styles.progressContainer}>
-          <View style={styles.progressBackground}>
+          <View style={[styles.progressBackground, { backgroundColor: colors.border }]}>
             <View
               style={[
                 styles.progressBar,
                 {
                   width: `${Math.min(progress, 100)}%`,
-                  backgroundColor: progress > 100 ? "#dc2626" : "#6366f1",
+                  backgroundColor: progress > 100 ? colors.danger : colors.primary,
                 },
               ]}
             />
           </View>
-          <Text style={styles.progressText}>{progress.toFixed(1)}% spent</Text>
+          <Text style={[styles.progressText, { color: colors.textSecondary }]}>{progress.toFixed(1)}% spent</Text>
         </View>
 
         <View style={styles.budgetDetails}>
           <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Spent</Text>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Spent</Text>
             <Text
               style={[
                 styles.detailValue,
-                { color: "#dc2626", fontFamily: "Inter_600SemiBold" },
+                { color: colors.danger, fontFamily: "Inter_600SemiBold" },
               ]}
             >
               ${item.spent.toFixed(2)}
             </Text>
           </View>
           <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Remaining</Text>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Remaining</Text>
             <Text
               style={[
                 styles.detailValue,
                 {
-                  color: remaining >= 0 ? "#059669" : "#dc2626",
+                  color: remaining >= 0 ? colors.success : colors.danger,
                   fontFamily: "Inter_600SemiBold",
                 },
               ]}
@@ -207,11 +209,11 @@ export default function BudgetScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Budget</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Budget</Text>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
           onPress={() => setShowForm(true)}
         >
           <Plus size={24} color="#ffffff" />
@@ -219,18 +221,19 @@ export default function BudgetScreen() {
       </View>
 
       {showForm && (
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: colors.card, shadowColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.categoryButton}
+            style={[styles.categoryButton, { borderColor: colors.border }]}
             onPress={() => setShowCategoryModal(true)}
           >
-            <Text style={styles.categoryButtonText}>
+            <Text style={[styles.categoryButtonText, { color: colors.textSecondary }]}>
               {category || "Select Category"}
             </Text>
           </TouchableOpacity>
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            placeholderTextColor={colors.textSecondary}
             placeholder="Budget Amount"
             value={amount}
             onChangeText={setAmount}
@@ -258,9 +261,9 @@ export default function BudgetScreen() {
         onRequestClose={() => setShowCategoryModal(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {editingCategory ? "Edit Category" : "Add Category"}
               </Text>
               <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
@@ -270,7 +273,8 @@ export default function BudgetScreen() {
 
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                placeholderTextColor={colors.textSecondary}
                 placeholder="Category name"
                 value={newCategory}
                 onChangeText={setNewCategory}
@@ -279,16 +283,16 @@ export default function BudgetScreen() {
             </View>
 
             <View style={styles.categoryList}>
-              <Text style={styles.categoryHeader}>Existing Categories</Text>
+              <Text style={[styles.categoryHeader, { color: colors.text }]}>Existing Categories</Text>
               <FlatList
                 data={transactionCategories}
                 renderItem={({ item }) => (
-                  <View style={styles.categoryItem}>
+                  <View style={[styles.categoryItem, { borderBottomColor: colors.border }]}>
                     <TouchableOpacity
                       style={styles.categoryTextContainer}
                       onPress={() => handleSelectCategory(item)}
                     >
-                      <Text style={styles.categoryText}>{item}</Text>
+                      <Text style={[styles.categoryText, { color: colors.text }]}>{item}</Text>
                     </TouchableOpacity>
                     <View style={styles.categoryActions}>
                       <TouchableOpacity
@@ -319,7 +323,7 @@ export default function BudgetScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.button, { backgroundColor: colors.primary }]}
               onPress={handleAddCategory}
               disabled={isLoading}
             >

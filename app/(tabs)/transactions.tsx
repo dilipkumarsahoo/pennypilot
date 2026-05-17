@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 // import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useThemeStore } from '@/store/themeStore';
 
 export default function TransactionsScreen() {
   const { 
@@ -23,6 +24,7 @@ export default function TransactionsScreen() {
     loadTransactionCategories,
     loadTransactions 
   } = useFinanceStore();
+  const { colors } = useThemeStore();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [amount, setAmount] = useState('');
@@ -195,12 +197,12 @@ export default function TransactionsScreen() {
 
   const renderTransaction = ({ item }: { item: Transaction }) => (
     
-    <View style={styles.transactionCard}>
+    <View style={[styles.transactionCard, { backgroundColor: colors.card, shadowColor: colors.border }]}>
       <View style={styles.transactionHeader}>
         <View>
-          <Text style={styles.transactionCategory}>{item.category}</Text>
-          <Text style={styles.transactionDescription}>{item.description}</Text>
-          <Text style={styles.transactionDate}>
+          <Text style={[styles.transactionCategory, { color: colors.text }]}>{item.category}</Text>
+          <Text style={[styles.transactionDescription, { color: colors.textSecondary }]}>{item.description}</Text>
+          <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
             {format(new Date(item.date), 'MMM dd, yyyy')}
           </Text>
         </View>
@@ -244,11 +246,11 @@ export default function TransactionsScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Transactions</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Transactions</Text>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
           onPress={() => {
             setShowForm(true);
             setEditingTransaction(null);
@@ -264,13 +266,13 @@ export default function TransactionsScreen() {
       </View>
 
       {showForm && (
-        <View style={styles.formContainer}>
-          <View style={styles.form}>
-            <View style={styles.typeToggle}>
+        <View style={[styles.formContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.form, { backgroundColor: colors.card }]}>
+            <View style={[styles.typeToggle, { backgroundColor: colors.background }]}>
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  transactionType === 'expense' && styles.activeTypeButton,
+                  transactionType === 'expense' && [styles.activeTypeButton, { backgroundColor: colors.card }],
                 ]}
                 onPress={() => setTransactionType('expense')}
               >
@@ -302,7 +304,8 @@ export default function TransactionsScreen() {
             </View>
 
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholderTextColor={colors.textSecondary}
               placeholder="Amount"
               value={amount}
               onChangeText={(text) => {
@@ -316,16 +319,17 @@ export default function TransactionsScreen() {
               maxLength={10}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholderTextColor={colors.textSecondary}
               placeholder="Description"
               value={description}
               onChangeText={setDescription}
             />
             <TouchableOpacity
-              style={styles.categoryButton}
+              style={[styles.categoryButton, { borderColor: colors.border }]}
               onPress={() => setShowCategoryModal(true)}
             >
-              <Text style={styles.categoryButtonText}>
+              <Text style={[styles.categoryButtonText, { color: colors.textSecondary }]}>
                 {category || 'Select Category'}
               </Text>
             </TouchableOpacity>
@@ -363,7 +367,7 @@ export default function TransactionsScreen() {
 
             <View style={styles.formButtons}>
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, { backgroundColor: colors.primary }]}
                 onPress={handleAddTransaction}
               >
                 <Text style={styles.submitButtonText}>
@@ -389,7 +393,7 @@ export default function TransactionsScreen() {
         keyExtractor={(date) => date}
         renderItem={({ item: date }) => (
           <View style={styles.dateGroup}>
-            <Text style={styles.dateHeader}>
+            <Text style={[styles.dateHeader, { color: colors.textSecondary }]}>
               {format(new Date(date), 'MMMM d, yyyy')}
             </Text>
             <Text style={styles.dateHeader}>
@@ -449,9 +453,9 @@ export default function TransactionsScreen() {
           onRequestClose={() => setShowCategoryModal(false)}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
+            <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
                   {editingCategory ? 'Edit Category' : 'Add Category'}
                 </Text>
                 <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
