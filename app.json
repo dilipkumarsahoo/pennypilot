@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "pennypilot",
+    "name": "PennyPilot",
     "slug": "pennypilot",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -50,8 +50,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "31bd963e-d877-4cd5-9eb5-7ad4c5710519"
+        "projectId": "af0435ce-520c-4e75-a8fc-6271e1e803c1"
       }
-    }
+    },
+    "owner": "dilip_031"
   }
 }
