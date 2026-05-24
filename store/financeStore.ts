@@ -7,6 +7,7 @@ import {
   deleteGoalFromDB,
   deleteTransactionCategoryFromDB,
   deleteTransactionFromDB,
+  getAllDataAsJson,
   getBudgetsFromDB,
   getGoalsFromDB,
   getTransactionCategoriesFromDB,
@@ -47,17 +48,18 @@ type FinanceStore = {
   budgets: Budget[];
   goals: Goal[];
   transactionCategories: string[];
+  json: any;
   // budgetCategories: string[];
   addTransaction: (transaction: Omit<Transaction, "id">) => Promise<void>;
   updateTransaction: (
     id: string,
-    transaction: Partial<Omit<Transaction, "id">>
+    transaction: Partial<Omit<Transaction, "id">>,
   ) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   addBudget: (budget: Omit<Budget, "id" | "spent">) => Promise<void>;
   updateBudget: (
     id: string,
-    budget: Partial<Omit<Budget, "id">>
+    budget: Partial<Omit<Budget, "id">>,
   ) => Promise<void>;
   deleteBudget: (id: string) => Promise<void>;
   addGoal: (goal: Omit<Goal, "id" | "currentAmount">) => Promise<void>;
@@ -75,6 +77,7 @@ type FinanceStore = {
   setGoals: (goals: Goal[]) => void;
   setBudgets: (budgets: Budget[]) => void;
   loadTransactions: () => Promise<void>;
+  loadAllDataAsJson: () => Promise<void>;
 };
 
 export const useFinanceStore = create<FinanceStore>((set, get) => ({
@@ -83,6 +86,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   goals: [],
   transactionCategories: [],
   budgetCategories: [],
+  json: [],
 
   setTransactions: (transactions) => set({ transactions }),
   setTransactionCategories: (categories) =>
@@ -134,7 +138,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       // Check if category is used in transactions
       const state = get();
       const isUsedInTransactions = state.transactions.some(
-        (t) => t.category === category
+        (t) => t.category === category,
       );
 
       if (isUsedInTransactions) {
@@ -169,7 +173,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
         //   index === self.findIndex((t) => t.id === transaction.id)
         // )
         .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
 
       set({ transactions: uniqueTransactions });
@@ -228,7 +232,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
 
   updateTransaction: async (
     id: string,
-    transaction: Partial<Omit<Transaction, "id">>
+    transaction: Partial<Omit<Transaction, "id">>,
   ) => {
     try {
       const currentTransactions = get().transactions;
@@ -244,7 +248,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
 
       // Update the transaction
       const updatedTransactions = currentTransactions.map((t) =>
-        t.id === id ? updatedTransaction : t
+        t.id === id ? updatedTransaction : t,
       );
       set({ transactions: updatedTransactions });
       await updateTransactionInDB(id, {
@@ -318,7 +322,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
 
       // Delete the transaction
       const updatedTransactions = currentTransactions.filter(
-        (t) => t.id !== id
+        (t) => t.id !== id,
       );
       set({ transactions: updatedTransactions });
     } catch (error) {
@@ -337,7 +341,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       // Calculate initial spent amount from existing transactions
       const spent = get()
         .transactions.filter(
-          (t) => t.type === "expense" && t.category === budget.category
+          (t) => t.type === "expense" && t.category === budget.category,
         )
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
@@ -409,6 +413,30 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
     return state.transactions
       .filter((t) => t.type === "expense" && t.category === category)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  },
+  loadAllDataAsJson: async () => {
+    try {
+      const json = await getAllDataAsJson();
+      console.log("------------", "-----", json);
+
+      // const response = await fetch(
+      //   "https://webhook.site/77e69916-30f4-4dc7-b4da-9d28b17066ea",
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //     body: JSON.stringify(json),
+      //   },
+      // );
+      // const result = await response.text();
+      set({
+        json,
+      });
+    } catch (error) {
+      console.error("Error loading all data as JSON:", error);
+      throw error;
+    }
   },
 }));
 

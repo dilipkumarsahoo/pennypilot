@@ -113,7 +113,7 @@ export const initDatabase = async () => {
         for (const category of defaultCategories) {
           await db.runAsync(
             "INSERT OR IGNORE INTO categories (name) VALUES (?);",
-            [category]
+            [category],
           );
         }
         console.log("Default categories inserted");
@@ -172,14 +172,14 @@ export const initDatabase = async () => {
         for (const category of defaultTransactionCategories) {
           await db.runAsync(
             "INSERT OR IGNORE INTO transaction_categories (name) VALUES (?);",
-            [category]
+            [category],
           );
         }
         console.log("Default transaction categories inserted");
       } catch (error) {
         console.error(
           "Error creating/inserting into transaction_categories table:",
-          error
+          error,
         );
       }
 
@@ -196,7 +196,7 @@ export const initDatabase = async () => {
 };
 
 export const addTransactionToDB = async (
-  transaction: Omit<Transaction, "id">
+  transaction: Omit<Transaction, "id">,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const transactions = await webStorage.getTransactions();
@@ -220,7 +220,7 @@ export const addTransactionToDB = async (
 
     await db.runAsync(
       "INSERT INTO transactions (type, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
-      values
+      values,
     );
   } catch (error) {
     console.error("Error adding transaction:", error);
@@ -237,7 +237,7 @@ export const getTransactionsFromDB = async (): Promise<Transaction[]> => {
     if (!db) throw new Error("Database not initialized");
 
     const result: Transaction[] = await db.getAllAsync(
-      "SELECT * FROM transactions ORDER BY date DESC"
+      "SELECT * FROM transactions ORDER BY date DESC",
     );
     console.log("Transactions db:", result);
     const parsed = result.map((t: Transaction) => ({
@@ -256,7 +256,7 @@ export const getTransactionsFromDB = async (): Promise<Transaction[]> => {
 
 export const updateTransactionInDB = async (
   id: string,
-  transaction: Partial<Omit<Transaction, "id">>
+  transaction: Partial<Omit<Transaction, "id">>,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const transactions = await webStorage.getTransactions();
@@ -277,7 +277,7 @@ export const updateTransactionInDB = async (
       transaction.category ?? null,
       transaction.date instanceof Date
         ? transaction.date.toISOString()
-        : transaction.date ?? null,
+        : (transaction.date ?? null),
       transaction.description ?? null,
       id,
     ];
@@ -285,7 +285,7 @@ export const updateTransactionInDB = async (
     try {
       await db.runAsync(
         "UPDATE transactions SET type = ?, amount = ?, category = ?, date = ?, description = ? WHERE id = ?",
-        values
+        values,
       );
     } catch (error) {
       console.error("Error updating transaction:", error);
@@ -301,7 +301,7 @@ export const deleteTransactionFromDB = async (id: string): Promise<void> => {
   if (Platform.OS === "web") {
     const transactions = await webStorage.getTransactions();
     const filteredTransactions = transactions.filter(
-      (t: Transaction) => t.id !== id
+      (t: Transaction) => t.id !== id,
     );
     await webStorage.saveTransactions(filteredTransactions);
     return;
@@ -338,7 +338,7 @@ export const getCategoriesFromDB = async (): Promise<string[]> => {
             console.error("Error getting categories:", error);
             reject(error);
             return false;
-          }
+          },
         );
       });
     });
@@ -375,7 +375,7 @@ export const addCategoryToDB = async (category: string): Promise<void> => {
             console.error("Error adding category:", error);
             reject(error);
             return false;
-          }
+          },
         );
       });
     });
@@ -416,14 +416,14 @@ export const deleteCategoryFromDB = async (category: string): Promise<void> => {
                 console.error("Error deleting category:", error);
                 reject(error);
                 return false;
-              }
+              },
             );
           },
           (_: Transaction, error: Error) => {
             console.error("Error deleting transactions with category:", error);
             reject(error);
             return false;
-          }
+          },
         );
       });
     });
@@ -434,7 +434,7 @@ export const deleteCategoryFromDB = async (category: string): Promise<void> => {
 };
 
 export const addGoalToDB = async (
-  goal: Omit<Goal, "id" | "currentAmount">
+  goal: Omit<Goal, "id" | "currentAmount">,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const goals = await webStorage.getGoals();
@@ -463,7 +463,7 @@ export const addGoalToDB = async (
 
     await db.runAsync(
       "INSERT INTO goals (id, name, targetAmount, currentAmount, deadline) VALUES (?, ?, ?, ?, ?);",
-      [id, goal.name, goal.targetAmount, 0, deadlineStr]
+      [id, goal.name, goal.targetAmount, 0, deadlineStr],
     );
 
     console.log("Goal added successfully:", goal.name);
@@ -482,7 +482,7 @@ export const getGoalsFromDB = async (): Promise<Goal[]> => {
     if (!db) throw new Error("Database not initialized");
 
     const rows: DBGoal[] = await db.getAllAsync(
-      "SELECT * FROM goals ORDER BY datetime(deadline) DESC"
+      "SELECT * FROM goals ORDER BY datetime(deadline) DESC",
     );
 
     const parsedGoals = rows.map((g: DBGoal) => ({
@@ -501,14 +501,14 @@ export const getGoalsFromDB = async (): Promise<Goal[]> => {
 
 export const updateGoalProgressInDB = async (
   goalId: string,
-  amount: number
+  amount: number,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const goals = await webStorage.getGoals();
     const updatedGoals = goals.map((goal: Goal) =>
       goal.id === goalId
         ? { ...goal, currentAmount: goal.currentAmount + amount }
-        : goal
+        : goal,
     );
     await webStorage.saveGoals(updatedGoals);
     return;
@@ -520,7 +520,7 @@ export const updateGoalProgressInDB = async (
 
     await db.runAsync(
       "UPDATE goals SET currentAmount = currentAmount + ? WHERE id = ?;",
-      [amount, goalId]
+      [amount, goalId],
     );
 
     console.log("Goal progress updated successfully:", goalId);
@@ -552,7 +552,7 @@ export const deleteGoalFromDB = async (goalId: string): Promise<void> => {
 };
 
 export const addBudgetToDB = async (
-  budget: Omit<Budget, "id">
+  budget: Omit<Budget, "id">,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const budgets = await webStorage.getBudgets();
@@ -576,7 +576,7 @@ export const addBudgetToDB = async (
     // Use runAsync to insert the budget data
     await db.runAsync(
       "INSERT INTO budgets ( category, amount, spent) VALUES (?, ?, ?);",
-      [budget.category, budget.amount, budget.spent]
+      [budget.category, budget.amount, budget.spent],
     );
 
     console.log("Budget added successfully:", budget.category);
@@ -597,7 +597,7 @@ export const getBudgetsFromDB = async (): Promise<Budget[]> => {
 
     console.log(".. budget before ");
     const result = await db.getAllAsync(
-      "SELECT * FROM budgets ORDER BY category"
+      "SELECT * FROM budgets ORDER BY category",
     );
     console.log(".. budget after queyr", result);
 
@@ -615,12 +615,12 @@ export const getBudgetsFromDB = async (): Promise<Budget[]> => {
 
 export const updateBudgetInDB = async (
   id: string,
-  budget: Partial<Omit<Budget, "id">>
+  budget: Partial<Omit<Budget, "id">>,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const budgets = await webStorage.getBudgets();
     const updatedBudgets = budgets.map((b: Budget) =>
-      b.id === id ? { ...b, ...budget } : b
+      b.id === id ? { ...b, ...budget } : b,
     );
     await webStorage.saveBudgets(updatedBudgets);
     return;
@@ -665,7 +665,7 @@ export const updateBudgetInDB = async (
             console.error("Error updating budget:", error);
             reject(error);
             return false;
-          }
+          },
         );
       });
     });
@@ -710,7 +710,7 @@ export const getTransactionCategoriesFromDB = async (): Promise<string[]> => {
     if (!db) throw new Error("Database not initialized");
 
     const rows: { name: string }[] = await db.getAllAsync(
-      "SELECT name FROM transaction_categories ORDER BY name"
+      "SELECT name FROM transaction_categories ORDER BY name",
     );
 
     const names = rows.map((item) => item.name);
@@ -725,7 +725,7 @@ export const getTransactionCategoriesFromDB = async (): Promise<string[]> => {
 };
 
 export const addTransactionCategoryToDB = async (
-  category: string
+  category: string,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const categories = await webStorage.getTransactionCategories();
@@ -741,7 +741,7 @@ export const addTransactionCategoryToDB = async (
 
     await db.runAsync(
       "INSERT OR IGNORE INTO transaction_categories (name) VALUES (?)",
-      [category]
+      [category],
     );
   } catch (error) {
     console.error("Error adding transaction category:", error);
@@ -750,7 +750,7 @@ export const addTransactionCategoryToDB = async (
 };
 
 export const deleteTransactionCategoryFromDB = async (
-  category: string
+  category: string,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const categories = await webStorage.getTransactionCategories();
@@ -781,7 +781,7 @@ export const getBudgetCategoriesFromDB = async (): Promise<string[]> => {
     if (!db) throw new Error("Database not initialized");
 
     const result = await db.getAllAsync(
-      "SELECT name FROM budget_categories ORDER BY name"
+      "SELECT name FROM budget_categories ORDER BY name",
     );
     console.log("...", result);
 
@@ -793,7 +793,7 @@ export const getBudgetCategoriesFromDB = async (): Promise<string[]> => {
 };
 
 export const addBudgetCategoryToDB = async (
-  category: string
+  category: string,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const categories = await webStorage.getBudgetCategories();
@@ -809,7 +809,7 @@ export const addBudgetCategoryToDB = async (
 
     await db.runAsync(
       "INSERT OR IGNORE INTO budget_categories (name) VALUES (?)",
-      [category]
+      [category],
     );
   } catch (error) {
     console.error("Error adding budget category:", error);
@@ -818,7 +818,7 @@ export const addBudgetCategoryToDB = async (
 };
 
 export const deleteBudgetCategoryFromDB = async (
-  category: string
+  category: string,
 ): Promise<void> => {
   if (Platform.OS === "web") {
     const categories = await webStorage.getBudgetCategories();
@@ -839,9 +839,54 @@ export const deleteBudgetCategoryFromDB = async (
   }
 };
 
+// export const getAllDataAsJson = async (): Promise<Record<string, any>> => {
+//   const db = await getDBConnection();
+//   if (!db) throw new Error("Database not initialized");
+
+//   try {
+//     const [transactions, categories, goals, budgets, transactionCategories] =
+//       await Promise.all([
+//         db.getAllAsync("SELECT * FROM transactions ORDER BY date DESC"),
+//         db.getAllAsync("SELECT * FROM categories ORDER BY name"),
+//         db.getAllAsync("SELECT * FROM goals ORDER BY deadline"),
+//         db.getAllAsync("SELECT * FROM budgets ORDER BY category"),
+//         db.getAllAsync("SELECT * FROM transaction_categories ORDER BY name"),
+//       ]);
+
+//     return {
+//       transactions: transactions.map((t: any) => ({
+//         ...t,
+//         amount: Number(t.amount),
+//         date: t.date ? new Date(t.date).toISOString() : null,
+//       })),
+//       categories: categories.map((c: { name: string }) => c.name),
+//       goals: goals.map((g: any) => ({
+//         ...g,
+//         targetAmount: Number(g.targetAmount),
+//         currentAmount: Number(g.currentAmount),
+//         deadline: g.deadline ? new Date(g.deadline).toISOString() : null,
+//       })),
+//       budgets: budgets.map((b: any) => ({
+//         ...b,
+//         amount: Number(b.amount),
+//         spent: Number(b.spent),
+//       })),
+//       transactionCategories: transactionCategories.map(
+//         (c: { name: string }) => c.name
+//       ),
+//     };
+//   } catch (error) {
+//     console.error("Error fetching all data as JSON:", error);
+//     throw error;
+//   }
+// };
+
 export const getAllDataAsJson = async (): Promise<Record<string, any>> => {
   const db = await getDBConnection();
-  if (!db) throw new Error("Database not initialized");
+
+  if (!db) {
+    throw new Error("Database not initialized");
+  }
 
   try {
     const [transactions, categories, goals, budgets, transactionCategories] =
@@ -854,26 +899,11 @@ export const getAllDataAsJson = async (): Promise<Record<string, any>> => {
       ]);
 
     return {
-      transactions: transactions.map((t: any) => ({
-        ...t,
-        amount: Number(t.amount),
-        date: t.date ? new Date(t.date).toISOString() : null,
-      })),
-      categories: categories.map((c: { name: string }) => c.name),
-      goals: goals.map((g: any) => ({
-        ...g,
-        targetAmount: Number(g.targetAmount),
-        currentAmount: Number(g.currentAmount),
-        deadline: g.deadline ? new Date(g.deadline).toISOString() : null,
-      })),
-      budgets: budgets.map((b: any) => ({
-        ...b,
-        amount: Number(b.amount),
-        spent: Number(b.spent),
-      })),
-      transactionCategories: transactionCategories.map(
-        (c: { name: string }) => c.name
-      ),
+      transactions,
+      categories,
+      goals,
+      budgets,
+      transactionCategories,
     };
   } catch (error) {
     console.error("Error fetching all data as JSON:", error);

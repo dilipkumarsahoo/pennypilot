@@ -1,38 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, Platform, Alert } from 'react-native';
-import { useFinanceStore, Transaction } from '@/store/financeStore';
-import { format, parseISO } from 'date-fns';
-import { Plus, EllipsisVertical as MoreVertical, Trash, CreditCard as Edit, X, Calendar } from 'lucide-react-native';
-// import { getAllDataAsJson } from '@/services/database';
-import { Ionicons } from '@expo/vector-icons';
+import { Transaction, useFinanceStore } from "@/store/financeStore";
+import { Ionicons } from "@expo/vector-icons";
+import { format, parseISO } from "date-fns";
+import {
+  Calendar,
+  CreditCard as Edit,
+  EllipsisVertical as MoreVertical,
+  Plus,
+  Trash,
+} from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 // import { Picker } from '@react-native-picker/picker';
-import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useThemeStore } from '@/store/themeStore';
+import { useThemeStore } from "@/store/themeStore";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useRouter } from "expo-router";
 
 export default function TransactionsScreen() {
-  const { 
-    transactions, 
-    transactionCategories, 
-    addTransaction, 
-    updateTransaction, 
-    deleteTransaction, 
-    addTransactionCategory, 
+  const {
+    transactions,
+    transactionCategories,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addTransactionCategory,
     deleteTransactionCategory,
-    setTransactions, 
-    setTransactionCategories, 
+    setTransactions,
+    setTransactionCategories,
     loadTransactionCategories,
-    loadTransactions 
+    loadTransactions,
+    loadAllDataAsJson,
   } = useFinanceStore();
   const { colors } = useThemeStore();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [transactionType, setTransactionType] = useState<"income" | "expense">(
+    "expense",
+  );
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [showMenu, setShowMenu] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
@@ -50,14 +69,17 @@ export default function TransactionsScreen() {
 
   const handleAddTransaction = async () => {
     if (!amount || !description || !category) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
     try {
       setIsLoading(true);
       const transaction = {
-        amount: transactionType === 'expense' ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount)),
+        amount:
+          transactionType === "expense"
+            ? -Math.abs(parseFloat(amount))
+            : Math.abs(parseFloat(amount)),
         description,
         category,
         date: selectedDate,
@@ -71,17 +93,17 @@ export default function TransactionsScreen() {
         await addTransaction(transaction);
       }
 
-      setAmount('');
-      setDescription('');
-      setCategory('');
+      setAmount("");
+      setDescription("");
+      setCategory("");
       setSelectedDate(new Date());
-      setTransactionType('expense');
+      setTransactionType("expense");
       setShowForm(false);
 
       await loadTransactions();
     } catch (error) {
-      Alert.alert('Error', 'Failed to add transaction. Please try again.');
-      console.error('Error adding transaction:', error);
+      Alert.alert("Error", "Failed to add transaction. Please try again.");
+      console.error("Error adding transaction:", error);
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +126,8 @@ export default function TransactionsScreen() {
       await deleteTransaction(id);
       setShowMenu(null);
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete transaction. Please try again.');
-      console.error('Error deleting transaction:', error);
+      Alert.alert("Error", "Failed to delete transaction. Please try again.");
+      console.error("Error deleting transaction:", error);
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +135,7 @@ export default function TransactionsScreen() {
 
   const handleAddCategory = async () => {
     if (!newCategory.trim()) {
-      Alert.alert('Error', 'Please enter a category name');
+      Alert.alert("Error", "Please enter a category name");
       return;
     }
 
@@ -133,11 +155,11 @@ export default function TransactionsScreen() {
         // Set the new category as selected
         setCategory(newCategory);
       }
-      setNewCategory('');
+      setNewCategory("");
       setShowCategoryModal(false);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add category. Please try again.');
-      console.error('Error adding category:', error);
+      Alert.alert("Error", "Failed to add category. Please try again.");
+      console.error("Error adding category:", error);
     } finally {
       setIsLoading(false);
     }
@@ -149,11 +171,11 @@ export default function TransactionsScreen() {
       await deleteTransactionCategory(categoryToDelete);
       // Clear the selected category if it was deleted
       if (category === categoryToDelete) {
-        setCategory('');
+        setCategory("");
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete category. Please try again.');
-      console.error('Error deleting category:', error);
+      Alert.alert("Error", "Failed to delete category. Please try again.");
+      console.error("Error deleting category:", error);
     } finally {
       setIsLoading(false);
     }
@@ -176,41 +198,62 @@ export default function TransactionsScreen() {
     }
   };
 
-  const groupedTransactions = transactions.reduce((groups, transaction) => {
-    // Extract just the date portion (yyyy-MM-dd)
-    const date = format(
-      typeof transaction.date === 'string' ? parseISO(transaction.date) : transaction.date,
-      'yyyy-MM-dd'
-    );
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(transaction);
-    return groups;
-  }, {} as Record<string, Transaction[]>);
+  const groupedTransactions = transactions.reduce(
+    (groups, transaction) => {
+      // Extract just the date portion (yyyy-MM-dd)
+      const date = format(
+        typeof transaction.date === "string"
+          ? parseISO(transaction.date)
+          : transaction.date,
+        "yyyy-MM-dd",
+      );
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(transaction);
+      return groups;
+    },
+    {} as Record<string, Transaction[]>,
+  );
 
   // console.log("groupedTransactions", groupedTransactions)
-  
+
   // Sort the dates in descending order
-  const sortedDates = Object.keys(groupedTransactions)
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  const sortedDates = Object.keys(groupedTransactions).sort(
+    (a, b) => new Date(b).getTime() - new Date(a).getTime(),
+  );
 
   const renderTransaction = ({ item }: { item: Transaction }) => (
-    
-    <View style={[styles.transactionCard, { backgroundColor: colors.card, shadowColor: colors.border }]}>
+    <View
+      style={[
+        styles.transactionCard,
+        { backgroundColor: colors.card, shadowColor: colors.border },
+      ]}
+    >
       <View style={styles.transactionHeader}>
         <View>
-          <Text style={[styles.transactionCategory, { color: colors.text }]}>{item.category}</Text>
-          <Text style={[styles.transactionDescription, { color: colors.textSecondary }]}>{item.description}</Text>
-          <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
-            {format(new Date(item.date), 'MMM dd, yyyy')}
+          <Text style={[styles.transactionCategory, { color: colors.text }]}>
+            {item.category}
+          </Text>
+          <Text
+            style={[
+              styles.transactionDescription,
+              { color: colors.textSecondary },
+            ]}
+          >
+            {item.description}
+          </Text>
+          <Text
+            style={[styles.transactionDate, { color: colors.textSecondary }]}
+          >
+            {format(new Date(item.date), "MMM dd, yyyy")}
           </Text>
         </View>
         <View style={styles.rightSection}>
           <Text
             style={[
               styles.transactionAmount,
-              { color: item.type === 'income' ? '#059669' : '#dc2626' },
+              { color: item.type === "income" ? "#059669" : "#dc2626" },
             ]}
           >
             ${Math.abs(item.amount).toFixed(2)}
@@ -223,7 +266,7 @@ export default function TransactionsScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {showMenu === item.id && (
         <View style={styles.menu}>
           <TouchableOpacity
@@ -238,7 +281,7 @@ export default function TransactionsScreen() {
             onPress={() => handleDelete(item.id)}
           >
             <Trash size={16} color="#dc2626" />
-            <Text style={[styles.menuText, { color: '#dc2626' }]}>Delete</Text>
+            <Text style={[styles.menuText, { color: "#dc2626" }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -254,11 +297,11 @@ export default function TransactionsScreen() {
           onPress={() => {
             setShowForm(true);
             setEditingTransaction(null);
-            setAmount('');
-            setDescription('');
-            setCategory('');
+            setAmount("");
+            setDescription("");
+            setCategory("");
             setSelectedDate(new Date());
-            setTransactionType('expense');
+            setTransactionType("expense");
           }}
         >
           <Plus size={24} color="#ffffff" />
@@ -266,20 +309,34 @@ export default function TransactionsScreen() {
       </View>
 
       {showForm && (
-        <View style={[styles.formContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View
+          style={[
+            styles.formContainer,
+            { backgroundColor: colors.card, borderBottomColor: colors.border },
+          ]}
+        >
           <View style={[styles.form, { backgroundColor: colors.card }]}>
-            <View style={[styles.typeToggle, { backgroundColor: colors.background }]}>
+            <View
+              style={[
+                styles.typeToggle,
+                { backgroundColor: colors.background },
+              ]}
+            >
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  transactionType === 'expense' && [styles.activeTypeButton, { backgroundColor: colors.card }],
+                  transactionType === "expense" && [
+                    styles.activeTypeButton,
+                    { backgroundColor: colors.card },
+                  ],
                 ]}
-                onPress={() => setTransactionType('expense')}
+                onPress={() => setTransactionType("expense")}
               >
                 <Text
                   style={[
                     styles.typeButtonText,
-                    transactionType === 'expense' && styles.activeTypeButtonText,
+                    transactionType === "expense" &&
+                      styles.activeTypeButtonText,
                   ]}
                 >
                   Expense
@@ -288,14 +345,14 @@ export default function TransactionsScreen() {
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  transactionType === 'income' && styles.activeTypeButton,
+                  transactionType === "income" && styles.activeTypeButton,
                 ]}
-                onPress={() => setTransactionType('income')}
+                onPress={() => setTransactionType("income")}
               >
                 <Text
                   style={[
                     styles.typeButtonText,
-                    transactionType === 'income' && styles.activeTypeButtonText,
+                    transactionType === "income" && styles.activeTypeButtonText,
                   ]}
                 >
                   Income
@@ -304,13 +361,16 @@ export default function TransactionsScreen() {
             </View>
 
             <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              style={[
+                styles.input,
+                { borderColor: colors.border, color: colors.text },
+              ]}
               placeholderTextColor={colors.textSecondary}
               placeholder="Amount"
               value={amount}
               onChangeText={(text) => {
-                const numericValue = text.replace(/[^0-9.]/g, '');
-                const parts = numericValue.split('.');
+                const numericValue = text.replace(/[^0-9.]/g, "");
+                const parts = numericValue.split(".");
                 if (parts.length > 2) return;
                 if (parts[1] && parts[1].length > 2) return;
                 setAmount(numericValue);
@@ -319,7 +379,10 @@ export default function TransactionsScreen() {
               maxLength={10}
             />
             <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              style={[
+                styles.input,
+                { borderColor: colors.border, color: colors.text },
+              ]}
               placeholderTextColor={colors.textSecondary}
               placeholder="Description"
               value={description}
@@ -329,25 +392,30 @@ export default function TransactionsScreen() {
               style={[styles.categoryButton, { borderColor: colors.border }]}
               onPress={() => setShowCategoryModal(true)}
             >
-              <Text style={[styles.categoryButtonText, { color: colors.textSecondary }]}>
-                {category || 'Select Category'}
+              <Text
+                style={[
+                  styles.categoryButtonText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {category || "Select Category"}
               </Text>
             </TouchableOpacity>
 
-            {Platform.OS === 'web' ? (
+            {Platform.OS === "web" ? (
               <View style={styles.dateInputContainer}>
                 <Calendar size={20} color="#6b7280" style={styles.dateIcon} />
                 <input
                   type="date"
-                  value={format(selectedDate, 'yyyy-MM-dd')}
+                  value={format(selectedDate, "yyyy-MM-dd")}
                   onChange={(e) => setSelectedDate(new Date(e.target.value))}
                   style={{
-                    border: '1px solid #e5e7eb',
+                    border: "1px solid #e5e7eb",
                     borderRadius: 8,
                     padding: 12,
                     marginBottom: 12,
-                    width: '100%',
-                    fontFamily: 'Inter_400Regular',
+                    width: "100%",
+                    fontFamily: "Inter_400Regular",
                     fontSize: 16,
                   }}
                   aria-label="Select date"
@@ -360,18 +428,21 @@ export default function TransactionsScreen() {
               >
                 <Calendar size={20} color="#6b7280" />
                 <Text style={styles.dateButtonText}>
-                  {format(selectedDate, 'MMMM d, yyyy')}
+                  {format(selectedDate, "MMMM d, yyyy")}
                 </Text>
               </TouchableOpacity>
             )}
 
             <View style={styles.formButtons}>
               <TouchableOpacity
-                style={[styles.submitButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.submitButton,
+                  { backgroundColor: colors.primary },
+                ]}
                 onPress={handleAddTransaction}
               >
                 <Text style={styles.submitButtonText}>
-                  {editingTransaction ? 'Update' : 'Add'} Transaction
+                  {editingTransaction ? "Update" : "Add"} Transaction
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -394,56 +465,61 @@ export default function TransactionsScreen() {
         renderItem={({ item: date }) => (
           <View style={styles.dateGroup}>
             <Text style={[styles.dateHeader, { color: colors.textSecondary }]}>
-              {format(new Date(date), 'MMMM d, yyyy')}
+              {format(new Date(date), "MMMM d, yyyy")}
             </Text>
-            <Text style={styles.dateHeader}>
-            </Text>
+            <Text style={styles.dateHeader}></Text>
             {groupedTransactions[date].map((transaction) => (
               <React.Fragment key={transaction.id}>
                 {renderTransaction({ item: transaction })}
               </React.Fragment>
             ))}
-
+            <TouchableOpacity
+              style={[styles.submitButton, { backgroundColor: colors.primary }]}
+              onPress={loadAllDataAsJson}
+            >
+              <Text style={styles.submitButtonText}>
+                {" get All Transaction"}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
         contentContainerStyle={styles.list}
       />
 
-      {showDatePicker && (
-        Platform.OS === 'web' ? (
+      {showDatePicker &&
+        (Platform.OS === "web" ? (
           <input
             type="date"
-            value={format(selectedDate, 'yyyy-MM-dd')}
+            value={format(selectedDate, "yyyy-MM-dd")}
             onChange={(e) => {
               const date = new Date(e.target.value);
               setSelectedDate(date);
               setShowDatePicker(false);
             }}
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 100,
               right: 20,
               zIndex: 1000,
               padding: 8,
               borderRadius: 8,
-              border: '1px solid #e5e7eb',
-              backgroundColor: '#ffffff',
+              border: "1px solid #e5e7eb",
+              backgroundColor: "#ffffff",
             }}
             aria-label="Select date"
             title="Select date"
           />
         ) : (
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display="calendar"
-                  onChange={(_, date) => {
-                    if (date) setSelectedDate(date);
-                    setShowDatePicker(false);
-                  }}
-                />
-        )
-      )}
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="calendar"
+            onChange={(_, date) => {
+              if (date) setSelectedDate(date);
+              setShowDatePicker(false);
+            }}
+          />
+        ))}
 
       {showCategoryModal && (
         <Modal
@@ -453,10 +529,20 @@ export default function TransactionsScreen() {
           onRequestClose={() => setShowCategoryModal(false)}
         >
           <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <View
+              style={[
+                styles.modalContent,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <View
+                style={[
+                  styles.modalHeader,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
-                  {editingCategory ? 'Edit Category' : 'Add Category'}
+                  {editingCategory ? "Edit Category" : "Add Category"}
                 </Text>
                 <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
                   <Ionicons name="close" size={24} color="#6b7280" />
@@ -464,73 +550,85 @@ export default function TransactionsScreen() {
               </View>
 
               <FlatList
-              ListHeaderComponent={
-                <View style={styles.categoryList}>
-                  <Text style={styles.categoryHeader}>Existing Categories</Text>
-                </View>
-              }
-              data={transactionCategories}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <View style={styles.categoryItem}>
-                  <TouchableOpacity
-                    style={styles.categoryTextContainer}
-                    onPress={() => handleSelectCategory(item)}
-                  >
-                    <Text style={styles.categoryText}>{item}</Text>
-                  </TouchableOpacity>
-                  <View style={styles.categoryActions}>
-                    <TouchableOpacity
-                      onPress={() => handleEditCategory(item)}
-                      style={styles.categoryActionButton}
-                    >
-                      <Ionicons name="pencil-outline" size={20} color="#2563eb" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleDeleteCategory(item)}
-                      style={styles.categoryActionButton}
-                    >
-                      <Ionicons name="trash-outline" size={20} color="#dc2626" />
-                    </TouchableOpacity>
+                ListHeaderComponent={
+                  <View style={styles.categoryList}>
+                    <Text style={styles.categoryHeader}>
+                      Existing Categories
+                    </Text>
                   </View>
-                </View>
-              )}
-              ListFooterComponent={
-                <View style={styles.addCategorySection}>
-                  <Text style={styles.categoryHeader}>Add New Category</Text>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Category name"
-                      value={newCategory}
-                      onChangeText={setNewCategory}
-                      autoCapitalize="words"
-                    />
-                  </View>
-                  <View style={styles.categoryButtons}>
+                }
+                data={transactionCategories}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <View style={styles.categoryItem}>
                     <TouchableOpacity
-                      style={styles.categorySubmitButton}
-                      onPress={handleAddCategory}
-                      disabled={isLoading}
+                      style={styles.categoryTextContainer}
+                      onPress={() => handleSelectCategory(item)}
                     >
-                      <Text style={styles.categorySubmitButtonText}>
-                        {editingCategory ? 'Update Category' : 'Add Category'}
-                      </Text>
+                      <Text style={styles.categoryText}>{item}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.categoryCancelButton}
-                      onPress={() => {
-                        setShowCategoryModal(false);
-                        setEditingCategory(null);
-                        setNewCategory('');
-                      }}
-                    >
-                      <Text style={styles.categoryCancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
+                    <View style={styles.categoryActions}>
+                      <TouchableOpacity
+                        onPress={() => handleEditCategory(item)}
+                        style={styles.categoryActionButton}
+                      >
+                        <Ionicons
+                          name="pencil-outline"
+                          size={20}
+                          color="#2563eb"
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteCategory(item)}
+                        style={styles.categoryActionButton}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={20}
+                          color="#dc2626"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              }
-            />
+                )}
+                ListFooterComponent={
+                  <View style={styles.addCategorySection}>
+                    <Text style={styles.categoryHeader}>Add New Category</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Category name"
+                        value={newCategory}
+                        onChangeText={setNewCategory}
+                        autoCapitalize="words"
+                      />
+                    </View>
+                    <View style={styles.categoryButtons}>
+                      <TouchableOpacity
+                        style={styles.categorySubmitButton}
+                        onPress={handleAddCategory}
+                        disabled={isLoading}
+                      >
+                        <Text style={styles.categorySubmitButtonText}>
+                          {editingCategory ? "Update Category" : "Add Category"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.categoryCancelButton}
+                        onPress={() => {
+                          setShowCategoryModal(false);
+                          setEditingCategory(null);
+                          setNewCategory("");
+                        }}
+                      >
+                        <Text style={styles.categoryCancelButtonText}>
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                }
+              />
             </View>
           </View>
         </Modal>
@@ -542,51 +640,51 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: "#f3f4f6",
   },
   header: {
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: "#ffffff",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
+    fontFamily: "Inter_600SemiBold",
+    color: "#111827",
   },
   formContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
   },
   form: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   formButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 8,
   },
   typeToggle: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: "#f3f4f6",
     borderRadius: 8,
     padding: 4,
   },
   typeButton: {
     flex: 1,
     paddingVertical: 8,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 6,
   },
   activeTypeButton: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 1,
@@ -597,63 +695,63 @@ const styles = StyleSheet.create({
   },
   typeButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: '#6b7280',
+    fontFamily: "Inter_500Medium",
+    color: "#6b7280",
   },
   activeTypeButtonText: {
-    color: '#6366f1',
+    color: "#6366f1",
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: "Inter_400Regular",
   },
   dateInputContainer: {
-    position: 'relative',
+    position: "relative",
     marginBottom: 12,
   },
   dateIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 12,
-    top: '50%',
+    top: "50%",
     transform: [{ translateY: -10 }],
     zIndex: 1,
   },
   dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
   dateButtonText: {
     marginLeft: 8,
-    fontFamily: 'Inter_400Regular',
-    color: '#111827',
+    fontFamily: "Inter_400Regular",
+    color: "#111827",
   },
   categoryButton: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
   categoryButtonText: {
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
+    fontFamily: "Inter_400Regular",
+    color: "#6b7280",
   },
   submitButton: {
     flex: 1,
-    backgroundColor: '#6366f1',
+    backgroundColor: "#6366f1",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -663,23 +761,23 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: "Inter_500Medium",
   },
   cancelButton: {
     flex: 1,
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   cancelButtonText: {
-    color: '#6b7280',
+    color: "#6b7280",
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: "Inter_500Medium",
   },
   list: {
     padding: 20,
@@ -689,16 +787,16 @@ const styles = StyleSheet.create({
   },
   dateHeader: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#6b7280',
+    fontFamily: "Inter_600SemiBold",
+    color: "#6b7280",
     marginBottom: 8,
   },
   transactionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -708,47 +806,47 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   transactionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   rightSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   transactionCategory: {
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    color: '#111827',
+    fontFamily: "Inter_500Medium",
+    color: "#111827",
     marginBottom: 4,
   },
   transactionDescription: {
     fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
+    fontFamily: "Inter_400Regular",
+    color: "#6b7280",
   },
   transactionDate: {
     fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
+    fontFamily: "Inter_400Regular",
+    color: "#6b7280",
     marginTop: 4,
   },
   transactionAmount: {
     fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: "Inter_600SemiBold",
     marginRight: 8,
   },
   menuButton: {
     padding: 4,
   },
   menu: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 8,
     padding: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -759,39 +857,39 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 8,
   },
   menuText: {
     marginLeft: 8,
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: '#6b7280',
+    fontFamily: "Inter_500Medium",
+    color: "#6b7280",
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '90%',
+    maxHeight: "90%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
   },
   modalTitle: {
     fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
+    fontFamily: "Inter_600SemiBold",
+    color: "#111827",
   },
   modalScroll: {
     flex: 1,
@@ -801,30 +899,30 @@ const styles = StyleSheet.create({
   },
   categoryHeader: {
     fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
+    fontFamily: "Inter_600SemiBold",
+    color: "#111827",
     marginBottom: 8,
     paddingHorizontal: 20,
   },
   categoryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 12,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
   },
   categoryTextContainer: {
     flex: 1,
   },
   categoryText: {
     fontSize: 16,
-    fontFamily: 'Inter_400Regular',
-    color: '#111827',
+    fontFamily: "Inter_400Regular",
+    color: "#111827",
   },
   categoryActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   categoryActionButton: {
@@ -833,7 +931,7 @@ const styles = StyleSheet.create({
   addCategorySection: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: "#e5e7eb",
     paddingTop: 16,
     paddingHorizontal: 20,
   },
@@ -841,16 +939,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   categoryButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   categorySubmitButton: {
     flex: 1,
-    backgroundColor: '#6366f1',
+    backgroundColor: "#6366f1",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -860,58 +958,58 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   categorySubmitButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: "Inter_500Medium",
   },
   categoryCancelButton: {
     flex: 1,
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   categoryCancelButtonText: {
-    color: '#6b7280',
+    color: "#6b7280",
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: "Inter_500Medium",
   },
   datePickerModal: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   datePickerContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   datePickerTitle: {
     fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
+    fontFamily: "Inter_600SemiBold",
+    color: "#111827",
   },
   datePickerBody: {
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: "#6366f1",
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
