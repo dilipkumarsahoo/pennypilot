@@ -1,4 +1,6 @@
 import { Transaction, useFinanceStore } from "@/store/financeStore";
+import { useCurrencyStore } from "@/store/currencyStore";
+import { formatCurrency } from "@/utils/formatCurrency";
 import {
   getDeleteCategoryErrorMessage,
   getSaveCategoryErrorMessage,
@@ -46,6 +48,7 @@ export default function TransactionsScreen() {
     initialize,
   } = useFinanceStore();
   const { colors } = useThemeStore();
+  const { selectedCurrency } = useCurrencyStore();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [amount, setAmount] = useState("");
@@ -284,7 +287,7 @@ export default function TransactionsScreen() {
               { color: item.type === "income" ? "#059669" : "#dc2626" },
             ]}
           >
-            ${item.amount.toFixed(2)}
+            {formatCurrency(item.amount)}
           </Text>
           <TouchableOpacity
             onPress={() => setShowMenu(showMenu === item.id ? null : item.id)}

@@ -1,14 +1,17 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '@/store/themeStore';
+import { useCurrencyStore } from '@/store/currencyStore';
 import { useEffect } from 'react';
 
 export default function TabLayout() {
   const { colors, initTheme } = useThemeStore();
+  const loadCurrency = useCurrencyStore((s) => s.loadCurrency);
 
   useEffect(() => {
     initTheme();
-  }, [initTheme]);
+    loadCurrency();
+  }, [initTheme, loadCurrency]);
 
   return (
     <Tabs

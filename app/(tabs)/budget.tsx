@@ -1,6 +1,8 @@
 import Button from "@/components/Button";
 import { Budget, useFinanceStore } from "@/store/financeStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useCurrencyStore } from "@/store/currencyStore";
+import { formatCurrency } from "@/utils/formatCurrency";
 import {
   getDeleteCategoryErrorMessage,
   getSaveCategoryErrorMessage,
@@ -33,6 +35,7 @@ export default function BudgetScreen() {
     initialize,
   } = useFinanceStore();
   const { colors } = useThemeStore();
+  const { selectedCurrency } = useCurrencyStore();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [category, setCategory] = useState("");
@@ -170,7 +173,7 @@ export default function BudgetScreen() {
       <View style={[styles.budgetCard, { backgroundColor: colors.card, shadowColor: colors.border }]}>
         <View style={styles.budgetHeader}>
           <Text style={[styles.budgetCategory, { color: colors.text }]}>{item.category}</Text>
-          <Text style={[styles.budgetAmount, { color: colors.text }]}>${item.amount.toFixed(2)}</Text>
+          <Text style={[styles.budgetAmount, { color: colors.text }]}>{formatCurrency(item.amount)}</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -197,7 +200,7 @@ export default function BudgetScreen() {
                 { color: colors.danger, fontFamily: "Inter_600SemiBold" },
               ]}
             >
-              ${item.spent.toFixed(2)}
+              {formatCurrency(item.spent)}
             </Text>
           </View>
           <View style={styles.detailItem}>
@@ -211,7 +214,7 @@ export default function BudgetScreen() {
                 },
               ]}
             >
-              ${remaining.toFixed(2)}
+              {formatCurrency(remaining)}
             </Text>
           </View>
         </View>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { View,Text,StyleSheet,FlatList,TouchableOpacity,TextInput,Alert,Platform,Modal} from "react-native";
 import { useFinanceStore, Goal } from "@/store/financeStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useCurrencyStore } from "@/store/currencyStore";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { Plus, Calendar } from "lucide-react-native";
 import { format } from "date-fns";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -11,6 +13,7 @@ export default function GoalsScreen() {
   const { goals, addGoal, updateGoalProgress, deleteGoal, loadGoals, initialize } =
     useFinanceStore();
   const { colors } = useThemeStore();
+  const { selectedCurrency } = useCurrencyStore();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
@@ -104,12 +107,12 @@ export default function GoalsScreen() {
             />
           </View>
           <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-            ${item.currentAmount.toFixed(2)} of ${item.targetAmount.toFixed(2)}{" "}
+            {formatCurrency(item.currentAmount)} of {formatCurrency(item.targetAmount)}{" "}
             ({progress.toFixed(1)}%)
           </Text>
         </View>
 
-        <Text style={[styles.remainingText, { color: colors.success }]}>${remaining.toFixed(2)} to go</Text>
+        <Text style={[styles.remainingText, { color: colors.success }]}>{formatCurrency(remaining)} to go</Text>
 
         <View style={styles.buttonContainer}>
           {remaining > 0 ? (
@@ -303,7 +306,7 @@ export default function GoalsScreen() {
                   }
                 
                   if (numericAmount > remaining) {
-                    Alert.alert('Too Much', `You can only contribute up to $${remaining.toFixed(2)}`);
+                    Alert.alert('Too Much', `You can only contribute up to ${formatCurrency(remaining)}`);
                     return;
                   }
                 

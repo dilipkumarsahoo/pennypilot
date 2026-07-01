@@ -1,5 +1,7 @@
 import { useFinanceStore } from '@/store/financeStore';
 import { useThemeStore } from '@/store/themeStore';
+import { useCurrencyStore } from '@/store/currencyStore';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { Ionicons } from '@expo/vector-icons';
 import { endOfDay, format, isWithinInterval, startOfDay, subDays, subMonths, subYears } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +14,7 @@ type TimeFilter = 'week' | 'month' | 'year';
 export default function OverviewScreen() {
   const { transactions } = useFinanceStore();
   const { colors } = useThemeStore();
+  const { selectedCurrency } = useCurrencyStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
@@ -127,7 +130,7 @@ export default function OverviewScreen() {
           <Text style={styles.balanceLabel}>Total Balance</Text>
           <View style={styles.balanceRow}>
             <Text style={styles.balanceAmount}>
-              {isBalanceVisible ? `$${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••••'}
+              {isBalanceVisible ? formatCurrency(totalBalance) : '••••••••'}
             </Text>
             <TouchableOpacity onPress={() => setIsBalanceVisible(!isBalanceVisible)} style={styles.eyeIcon}>
               <Ionicons name={isBalanceVisible ? "eye-off-outline" : "eye-outline"} size={24} color="#94A3B8" />
@@ -142,7 +145,7 @@ export default function OverviewScreen() {
             <Text style={styles.monthlyStatLabel}>Monthly Income</Text>
             <View style={styles.monthlyStatValueRow}>
               <Text style={styles.monthlyStatAmount}>
-                ${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(totalIncome)}
               </Text>
               <View style={[styles.percentageBadge, { backgroundColor: 'rgba(20, 184, 166, 0.15)' }]}>
                 <Ionicons name="arrow-up" size={10} color="#14b8a6" style={{ transform: [{ rotate: '45deg' }] }} />
@@ -155,7 +158,7 @@ export default function OverviewScreen() {
             <Text style={styles.monthlyStatLabel}>Monthly Expense</Text>
             <View style={styles.monthlyStatValueRow}>
               <Text style={styles.monthlyStatAmount}>
-                ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(totalExpenses)}
               </Text>
               <View style={[styles.percentageBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
                 <Ionicons name="arrow-down" size={10} color="#ef4444" style={{ transform: [{ rotate: '-45deg' }] }} />
@@ -188,7 +191,7 @@ export default function OverviewScreen() {
               <View style={[styles.donutHole, { backgroundColor: colors.card, shadowColor: colors.border }]}>
                 <Text style={[styles.donutHoleLabel, { color: colors.textSecondary }]}>Total</Text>
                 <Text style={[styles.donutHoleValue, { color: colors.text }]}>
-                  ${totalExpenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  {formatCurrency(totalExpenses)}
                 </Text>
               </View>
             </View>
@@ -199,7 +202,7 @@ export default function OverviewScreen() {
                   <View style={[styles.legendColor, { backgroundColor: item.color }]} />
                   <Text style={[styles.legendName, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.legendValue, { color: colors.text }]}>
-                    ${item.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {formatCurrency(item.amount)}
                   </Text>
                 </View>
               ))}
@@ -264,7 +267,7 @@ export default function OverviewScreen() {
           withShadow={false}
           withDots={true}
           withScrollableDot={false}
-          yAxisLabel="$"
+           yAxisLabel={selectedCurrency.symbol}
           yAxisInterval={1}
           withHorizontalLabels={true}
           fromZero={true}

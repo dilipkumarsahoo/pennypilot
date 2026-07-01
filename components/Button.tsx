@@ -18,7 +18,7 @@ export default function Button({
   title = "Start Lesson",
   onPress,
   color = "#6366f1",
-}: ButtonProps): JSX.Element {
+}: ButtonProps) {
   const [isPressed, setIsPressed] = useState(false);
   const animatedValue = new Animated.Value(0);
 

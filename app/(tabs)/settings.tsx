@@ -1,11 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Linking, Switch } from 'react-native';
-import { Settings as SettingsIcon, Share2, MessageSquare, Mail, Star, CircleHelp as HelpCircle, Shield, Bell, Palette, CreditCard, ChevronRight, Moon, Check } from 'lucide-react-native';
+import { Settings as SettingsIcon, Share2, MessageSquare, Mail, Star, CircleHelp as HelpCircle, Shield, Bell, Palette, CreditCard, ChevronRight, Moon, Check, DollarSign } from 'lucide-react-native';
 import { useThemeStore, ThemeColor, colorMap } from '@/store/themeStore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useCurrencyStore } from '@/store/currencyStore';
+import CurrencyModal from '@/components/CurrencyModal';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 export default function SettingsScreen() {
   const { colors, themeMode, themeColor, isDark, setThemeMode, setThemeColor } = useThemeStore();
+  const { selectedCurrency } = useCurrencyStore();
+  const [isCurrencyModalVisible, setIsCurrencyModalVisible] = React.useState(false);
 
   const handleShare = async () => {
     try {
@@ -74,7 +79,7 @@ export default function SettingsScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>
                 <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Inter_500Medium' }}>Theme Preview</Text>
-                <Text style={{ color: '#ffffff', fontSize: 28, fontFamily: 'Inter_700Bold', marginTop: 4, letterSpacing: -0.5 }}>$12,450.00</Text>
+                <Text style={{ color: '#ffffff', fontSize: 28, fontFamily: 'Inter_700Bold', marginTop: 4, letterSpacing: -0.5 }}>{formatCurrency(12450)}</Text>
               </View>
               <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}>
                 <Star size={22} color="#ffffff" />
@@ -137,7 +142,15 @@ export default function SettingsScreen() {
         <View style={[styles.cardGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {renderMenuItem(<SettingsIcon size={24} color={colors.primary} />, 'App Settings', 'Customize your experience', () => {})}
           {renderMenuItem(<Bell size={24} color={colors.primary} />, 'Notifications', 'Manage alerts and reminders', () => {}, true)}
-          {renderMenuItem(<CreditCard size={24} color={colors.primary} />, 'Payment Methods', 'Manage your payment options', () => {}, false, true)}
+          {renderMenuItem(<CreditCard size={24} color={colors.primary} />, 'Payment Methods', 'Manage your payment options', () => {}, false)}
+          {renderMenuItem(
+            <DollarSign size={24} color={colors.primary} />,
+            "Currency",
+            selectedCurrency.code + " (" + selectedCurrency.symbol + ")",
+            () => setIsCurrencyModalVisible(true),
+            false,
+            true
+          )}
         </View>
       </View>
 
@@ -160,6 +173,11 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.textSecondary }]}>Version 1.0.0</Text>
+      
+      <CurrencyModal
+        visible={isCurrencyModalVisible}
+        onClose={() => setIsCurrencyModalVisible(false)}
+      />
     </ScrollView>
   );
 }
