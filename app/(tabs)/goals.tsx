@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { View,Text,StyleSheet,FlatList,TouchableOpacity,TextInput,Alert,Platform,Modal} from "react-native";
 import { useFinanceStore, Goal } from "@/store/financeStore";
+import { useThemeStore } from "@/store/themeStore";
 import { Plus, Calendar } from "lucide-react-native";
 import { format } from "date-fns";
-import { getGoalsFromDB } from "@/services/database";
-import { useThemeStore } from "@/store/themeStore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Button from "@/components/Button";
 
 export default function GoalsScreen() {
-  const { goals, addGoal, updateGoalProgress, deleteGoal, setGoals } =
+  const { goals, addGoal, updateGoalProgress, deleteGoal, loadGoals, initialize } =
     useFinanceStore();
   const { colors } = useThemeStore();
   const [showForm, setShowForm] = useState(false);
@@ -23,21 +22,9 @@ export default function GoalsScreen() {
   const [modalAmount, setModalAmount] = useState('');
 
   useEffect(() => {
+    initialize();
     loadGoals();
   }, []);
-
-  const loadGoals = async () => {
-    try {
-      setIsLoading(true);
-      const goalsFromDB = await getGoalsFromDB();
-      setGoals(goalsFromDB);
-    } catch (error) {
-      console.error("Error loading goals:", error);
-      Alert.alert("Error", "Failed to load goals. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAddGoal = async () => {
     if (!name || !targetAmount) {
@@ -201,8 +188,10 @@ export default function GoalsScreen() {
                 value={format(deadline, "yyyy-MM-dd")}
                 onChange={(e) => setDeadline(new Date(e.target.value))}
                 style={{
-                  border: "1px solid #e5e7eb",
+                  backgroundColor: colors.card,
+                  border: `1px solid ${colors.border}`,
                   borderRadius: 8,
+                  color: colors.text,
                   padding: 12,
                   marginBottom: 12,
                   width: "100%",
@@ -215,11 +204,11 @@ export default function GoalsScreen() {
           ) : (
             <>
               <TouchableOpacity
-                style={styles.dateButton}
+                style={[styles.dateButton, { borderColor: colors.border }]}
                 onPress={() => setShowDatePicker(true)}
               >
                 <Calendar size={20} color="#6b7280" />
-                <Text style={styles.dateButtonText}>
+                <Text style={[styles.dateButtonText, { color: colors.text }]}>
                   {format(deadline, "MMMM d, yyyy")}
                 </Text>
               </TouchableOpacity>

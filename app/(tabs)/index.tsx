@@ -47,7 +47,7 @@ export default function OverviewScreen() {
 
   const totalExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
-    .reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
+    .reduce((acc, curr) => acc + curr.amount, 0);
 
   const totalBalance = totalIncome - totalExpenses;
 
@@ -56,7 +56,7 @@ export default function OverviewScreen() {
     const breakdown = filteredTransactions
       .filter(t => t.type === 'expense')
       .reduce((acc, curr) => {
-        const amount = Math.abs(curr.amount);
+        const amount = curr.amount;
         acc[curr.category] = (acc[curr.category] || 0) + amount;
         return acc;
       }, {} as Record<string, number>);
@@ -81,7 +81,7 @@ export default function OverviewScreen() {
       if (curr.type === 'income') {
         acc[date].income += curr.amount;
       } else {
-        acc[date].expense += Math.abs(curr.amount);
+        acc[date].expense += curr.amount;
       }
       return acc;
     }, {} as Record<string, { income: number; expense: number }>);

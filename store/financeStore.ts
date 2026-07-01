@@ -1,82 +1,59 @@
 import {
-  addBudgetToDB,
-  addGoalToDB,
-  addTransactionCategoryToDB,
-  addTransactionToDB,
-  deleteBudgetFromDB,
-  deleteGoalFromDB,
-  deleteTransactionCategoryFromDB,
-  deleteTransactionFromDB,
-  getAllDataAsJson,
-  getBudgetsFromDB,
-  getGoalsFromDB,
-  getTransactionCategoriesFromDB,
-  getTransactionsFromDB,
-  initDatabase,
-  updateBudgetInDB,
-  updateGoalProgressInDB,
-  updateTransactionInDB,
-} from "@/services/database";
+  financeService,
+  type Budget,
+  type Goal,
+  type Transaction,
+} from "@/services/financeService";
 import { create } from "zustand";
 
-export type Transaction = {
-  id: string;
-  amount: number;
-  category: string;
-  description: string;
-  date: Date | string;
-  type: "income" | "expense";
-};
-
-export type Budget = {
-  id: string;
-  category: string;
-  amount: number;
-  spent: number;
-};
-
-export type Goal = {
-  id: string;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline: Date;
-};
+export type { Budget, Goal, Transaction } from "@/services/financeService";
 
 type FinanceStore = {
   transactions: Transaction[];
   budgets: Budget[];
   goals: Goal[];
-  transactionCategories: string[];
-  json: any;
-  // budgetCategories: string[];
-  addTransaction: (transaction: Omit<Transaction, "id">) => Promise<void>;
+  categories: string[];
+  isLoading: boolean;
+  isInitialized: boolean;
+  debugJson: Record<string, unknown> | null;
+
+  initialize: () => Promise<void>;
+  loadTransactions: (month?: number, year?: number) => Promise<void>;
+  loadCategories: () => Promise<void>;
+  loadBudgets: (month?: number, year?: number) => Promise<void>;
+  loadGoals: () => Promise<void>;
+  loadAll: () => Promise<void>;
+
+  addTransaction: (
+    transaction: Omit<Transaction, "id" | "categoryId" | "month" | "year"> & {
+      category: string;
+    },
+  ) => Promise<void>;
   updateTransaction: (
     id: string,
-    transaction: Partial<Omit<Transaction, "id">>,
+    transaction: Partial<Omit<Transaction, "id">> & { category?: string },
   ) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  addBudget: (budget: Omit<Budget, "id" | "spent">) => Promise<void>;
+
+  addCategory: (name: string) => Promise<void>;
+  updateCategory: (oldName: string, newName: string) => Promise<void>;
+  deleteCategory: (name: string) => Promise<void>;
+
+  addBudget: (budget: { category: string; amount: number }) => Promise<void>;
   updateBudget: (
     id: string,
-    budget: Partial<Omit<Budget, "id">>,
+    budget: Partial<{ category: string; amount: number }>,
   ) => Promise<void>;
   deleteBudget: (id: string) => Promise<void>;
-  addGoal: (goal: Omit<Goal, "id" | "currentAmount">) => Promise<void>;
+
+  addGoal: (goal: {
+    name: string;
+    targetAmount: number;
+    deadline: Date;
+  }) => Promise<void>;
   updateGoalProgress: (goalId: string, amount: number) => Promise<void>;
   deleteGoal: (goalId: string) => Promise<void>;
-  addTransactionCategory: (category: string) => Promise<void>;
-  deleteTransactionCategory: (category: string) => Promise<void>;
-  loadTransactionCategories: () => Promise<void>;
 
-  // loadBudgetCategories: () => Promise<void>;
-  calculateBudgetSpent: (category: string) => number;
-  setTransactions: (transactions: Transaction[]) => void;
-  setTransactionCategories: (categories: string[]) => void;
-
-  setGoals: (goals: Goal[]) => void;
-  setBudgets: (budgets: Budget[]) => void;
-  loadTransactions: () => Promise<void>;
   loadAllDataAsJson: () => Promise<void>;
 };
 
@@ -84,360 +61,134 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   transactions: [],
   budgets: [],
   goals: [],
-  transactionCategories: [],
-  budgetCategories: [],
-  json: [],
+  categories: [],
+  isLoading: false,
+  isInitialized: false,
+  debugJson: null,
 
-  setTransactions: (transactions) => set({ transactions }),
-  setTransactionCategories: (categories) =>
-    set({ transactionCategories: categories }),
-  // setBudgetCategories: (categories) => set({ budgetCategories: categories }),
-  setGoals: (goals) => set({ goals }),
-  setBudgets: (budgets) => set({ budgets }),
-
-  loadTransactionCategories: async () => {
+  initialize: async () => {
+    if (get().isInitialized) return;
+    set({ isLoading: true });
     try {
-      const categories = await getTransactionCategoriesFromDB();
-      set({ transactionCategories: categories });
-    } catch (error) {
-      console.error("Error loading transaction categories:", error);
-      throw error;
+      await get().loadAll();
+      set({ isInitialized: true });
+    } finally {
+      set({ isLoading: false });
     }
   },
 
-  // loadBudgetCategories: async () => {
-  //   try {
-  //     const categories = await getBudgetCategoriesFromDB();
-  //     // set({ budgetCategories: categories });
-  //   } catch (error) {
-  //     console.error('Error loading budget categories:', error);
-  //     throw error;
-  //   }
-  // },
-
-  addTransactionCategory: async (category) => {
-    try {
-      // Check if category already exists in transaction categories
-      const state = get();
-      if (state.transactionCategories.includes(category)) {
-        throw new Error("Category already exists");
-      }
-
-      // Add to transaction categories only
-      await addTransactionCategoryToDB(category);
-      const categories = await getTransactionCategoriesFromDB();
-      set({ transactionCategories: categories });
-    } catch (error) {
-      console.error("Error adding transaction category:", error);
-      throw error;
-    }
+  loadTransactions: async (month?, year?) => {
+    const filter =
+      month !== undefined || year !== undefined
+        ? { month, year }
+        : undefined;
+    const transactions = await financeService.getTransactions(filter);
+    set({ transactions });
   },
 
-  deleteTransactionCategory: async (category) => {
-    try {
-      // Check if category is used in transactions
-      const state = get();
-      const isUsedInTransactions = state.transactions.some(
-        (t) => t.category === category,
-      );
-
-      if (isUsedInTransactions) {
-        throw new Error("Cannot delete category that is in use");
-      }
-
-      await deleteTransactionCategoryFromDB(category);
-      const categories = await getTransactionCategoriesFromDB();
-      set({ transactionCategories: categories });
-    } catch (error) {
-      console.error("Error deleting transaction category:", error);
-      throw error;
-    }
+  loadCategories: async () => {
+    const categories = await financeService.getCategoryNames();
+    set({ categories });
   },
 
-  loadTransactions: async () => {
-    try {
-      const dbTransactions = (await getTransactionsFromDB()) as Transaction[];
-
-      // Convert string dates to Date objects
-      const processedTransactions = dbTransactions.map((transaction) => ({
-        ...transaction,
-        date:
-          typeof transaction.date === "string"
-            ? new Date(transaction.date)
-            : transaction.date,
-      }));
-
-      // Remove duplicates based on id and sort by date
-      const uniqueTransactions = processedTransactions
-        // .filter((transaction, index, self) =>
-        //   index === self.findIndex((t) => t.id === transaction.id)
-        // )
-        .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-
-      set({ transactions: uniqueTransactions });
-
-      // Update budget spent amounts based on all transactions
-      const budgets = get().budgets;
-      const updatedBudgets = budgets.map((budget) => {
-        const spent = uniqueTransactions
-          .filter((t) => t.type === "expense" && t.category === budget.category)
-          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-        return {
-          ...budget,
-          spent,
-        };
-      });
-      set({ budgets: updatedBudgets });
-    } catch (error) {
-      console.error("Error loading transactions:", error);
-    }
+  loadBudgets: async (month?, year?) => {
+    const budgets = await financeService.getBudgets(month, year);
+    set({ budgets });
   },
 
-  addTransaction: async (transaction: Omit<Transaction, "id">) => {
-    try {
-      const newTransaction = { ...transaction, id: Date.now().toString() };
-      const currentTransactions = get().transactions;
-      const newTransactions = [...currentTransactions, newTransaction];
-      set({ transactions: newTransactions });
-      await addTransactionToDB({
-        ...newTransaction,
-        date:
-          newTransaction.date instanceof Date
-            ? newTransaction.date.toISOString()
-            : newTransaction.date,
-      });
-
-      // Update budget spent amount if it's an expense
-      if (newTransaction.type === "expense") {
-        const budgets = get().budgets;
-        const updatedBudgets = budgets.map((budget) => {
-          if (budget.category === newTransaction.category) {
-            return {
-              ...budget,
-              spent: budget.spent + Math.abs(newTransaction.amount),
-            };
-          }
-          return budget;
-        });
-        set({ budgets: updatedBudgets });
-      }
-    } catch (error) {
-      console.error("Error adding transaction:", error);
-      throw error;
-    }
+  loadGoals: async () => {
+    const goals = await financeService.getGoals();
+    set({ goals });
   },
 
-  updateTransaction: async (
-    id: string,
-    transaction: Partial<Omit<Transaction, "id">>,
-  ) => {
-    try {
-      const currentTransactions = get().transactions;
-      const currentTransaction = currentTransactions.find((t) => t.id === id);
-      if (!currentTransaction) throw new Error("Transaction not found");
-
-      // Create updated transaction by merging current with updates
-      const updatedTransaction = {
-        ...currentTransaction,
-        ...transaction,
-        id, // Keep the original ID
-      };
-
-      // Update the transaction
-      const updatedTransactions = currentTransactions.map((t) =>
-        t.id === id ? updatedTransaction : t,
-      );
-      set({ transactions: updatedTransactions });
-      await updateTransactionInDB(id, {
-        ...updatedTransaction,
-        date:
-          updatedTransaction.date instanceof Date
-            ? updatedTransaction.date.toISOString()
-            : updatedTransaction.date,
-      });
-
-      // Update budget spent amount
-      const budgets = get().budgets;
-      const updatedBudgets = budgets.map((budget) => {
-        // If the category changed, update both old and new budget
-        if (currentTransaction.category !== updatedTransaction.category) {
-          if (budget.category === currentTransaction.category) {
-            return {
-              ...budget,
-              spent: budget.spent - Math.abs(currentTransaction.amount),
-            };
-          }
-          if (
-            budget.category === updatedTransaction.category &&
-            updatedTransaction.type === "expense"
-          ) {
-            return {
-              ...budget,
-              spent: budget.spent + Math.abs(updatedTransaction.amount),
-            };
-          }
-        } else if (budget.category === currentTransaction.category) {
-          // If only amount changed, update the difference
-          const amountDiff =
-            Math.abs(updatedTransaction.amount) -
-            Math.abs(currentTransaction.amount);
-          return {
-            ...budget,
-            spent: budget.spent + amountDiff,
-          };
-        }
-        return budget;
-      });
-      set({ budgets: updatedBudgets });
-    } catch (error) {
-      console.error("Error updating transaction:", error);
-      throw error;
-    }
+  loadAll: async () => {
+    const now = new Date();
+    await Promise.all([
+      get().loadCategories(),
+      get().loadTransactions(),
+      get().loadBudgets(now.getMonth() + 1, now.getFullYear()),
+      get().loadGoals(),
+    ]);
   },
 
-  deleteTransaction: async (id: string) => {
-    try {
-      const currentTransactions = get().transactions;
-      const transactionToDelete = currentTransactions.find((t) => t.id === id);
-      if (!transactionToDelete) throw new Error("Transaction not found");
-
-      await deleteTransactionFromDB(id);
-      // Update budget spent amount if it's an expense
-      if (transactionToDelete.type === "expense") {
-        const budgets = get().budgets;
-        const updatedBudgets = budgets.map((budget) => {
-          if (budget.category === transactionToDelete.category) {
-            return {
-              ...budget,
-              spent: budget.spent - Math.abs(transactionToDelete.amount),
-            };
-          }
-          return budget;
-        });
-        set({ budgets: updatedBudgets });
-      }
-
-      // Delete the transaction
-      const updatedTransactions = currentTransactions.filter(
-        (t) => t.id !== id,
-      );
-      set({ transactions: updatedTransactions });
-    } catch (error) {
-      console.error("Error deleting transaction:", error);
-      throw error;
-    }
+  addTransaction: async (transaction) => {
+    await financeService.addTransaction({
+      ...transaction,
+      amount: Math.abs(transaction.amount),
+    });
+    await get().loadTransactions();
+    await get().loadBudgets();
   },
+
+  updateTransaction: async (id, transaction) => {
+    await financeService.updateTransaction(id, {
+      ...transaction,
+      amount:
+        transaction.amount !== undefined
+          ? Math.abs(transaction.amount)
+          : undefined,
+    });
+    await get().loadTransactions();
+    await get().loadBudgets();
+  },
+
+  deleteTransaction: async (id) => {
+    await financeService.deleteTransaction(id);
+    await get().loadTransactions();
+    await get().loadBudgets();
+  },
+
+  addCategory: async (name) => {
+    const state = get();
+    if (state.categories.includes(name.trim())) {
+      throw new Error("Category already exists");
+    }
+    await financeService.addCategory(name);
+    await get().loadCategories();
+  },
+
+  updateCategory: async (oldName, newName) => {
+    await financeService.updateCategory(oldName, newName);
+    await get().loadAll();
+  },
+
+  deleteCategory: async (name) => {
+    await financeService.deleteCategory(name);
+    await get().loadCategories();
+  },
+
   addBudget: async (budget) => {
-    try {
-      // Validate that the category exists
-      const state = get();
-      if (!state.transactionCategories.includes(budget.category)) {
-        throw new Error(`Invalid category: ${budget.category}`);
-      }
+    await financeService.addBudget(budget);
+    await get().loadBudgets();
+  },
 
-      // Calculate initial spent amount from existing transactions
-      const spent = get()
-        .transactions.filter(
-          (t) => t.type === "expense" && t.category === budget.category,
-        )
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-      await addBudgetToDB({ ...budget, spent });
-      const budgets = await getBudgetsFromDB();
-      set({ budgets });
-    } catch (error) {
-      console.error("Error adding budget:", error);
-      throw error;
-    }
+  updateBudget: async (id, budget) => {
+    await financeService.updateBudget(id, budget);
+    await get().loadBudgets();
   },
 
   deleteBudget: async (id) => {
-    try {
-      await deleteBudgetFromDB(id);
-      const budgets = await getBudgetsFromDB();
-      set({ budgets });
-    } catch (error) {
-      console.error("Error deleting budget:", error);
-      throw error;
-    }
+    await financeService.deleteBudget(id);
+    await get().loadBudgets();
   },
 
-  addGoal: async (goal: Omit<Goal, "id" | "currentAmount">) => {
-    try {
-      await addGoalToDB(goal);
-      const goals = await getGoalsFromDB();
-      set({ goals });
-    } catch (error) {
-      console.error("Error adding goal:", error);
-      throw error;
-    }
-  },
-  updateBudget: async (id, budget) => {
-    try {
-      await updateBudgetInDB(id, budget);
-      const budgets = await getBudgetsFromDB();
-      set({ budgets });
-    } catch (error) {
-      console.error("Error updating budget:", error);
-      throw error;
-    }
+  addGoal: async (goal) => {
+    await financeService.addGoal(goal);
+    await get().loadGoals();
   },
 
-  updateGoalProgress: async (goalId: string, amount: number) => {
-    try {
-      await updateGoalProgressInDB(goalId, amount);
-      const goals = await getGoalsFromDB();
-      set({ goals });
-    } catch (error) {
-      console.error("Error updating goal progress:", error);
-      throw error;
-    }
+  updateGoalProgress: async (goalId, amount) => {
+    await financeService.updateGoalProgress(goalId, amount);
+    await get().loadGoals();
   },
 
-  deleteGoal: async (goalId: string) => {
-    try {
-      await deleteGoalFromDB(goalId);
-      const goals = await getGoalsFromDB();
-      set({ goals });
-    } catch (error) {
-      console.error("Error deleting goal:", error);
-      throw error;
-    }
+  deleteGoal: async (goalId) => {
+    await financeService.deleteGoal(goalId);
+    await get().loadGoals();
   },
 
-  calculateBudgetSpent: (category) => {
-    const state = get();
-    return state.transactions
-      .filter((t) => t.type === "expense" && t.category === category)
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  },
   loadAllDataAsJson: async () => {
-    try {
-      const json = await getAllDataAsJson();
-      console.log("------------", "-----", json);
-
-      // const response = await fetch(
-      //   "https://webhook.site/77e69916-30f4-4dc7-b4da-9d28b17066ea",
-      //   {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify(json),
-      //   },
-      // );
-      // const result = await response.text();
-      set({
-        json,
-      });
-    } catch (error) {
-      console.error("Error loading all data as JSON:", error);
-      throw error;
-    }
+    const debugJson = await financeService.exportAllData();
+    set({ debugJson });
   },
 }));
-
-initDatabase();

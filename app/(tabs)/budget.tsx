@@ -1,7 +1,11 @@
 import Button from "@/components/Button";
-import { getBudgetsFromDB } from "@/services/database";
 import { Budget, useFinanceStore } from "@/store/financeStore";
 import { useThemeStore } from "@/store/themeStore";
+import {
+  getDeleteCategoryErrorMessage,
+  getSaveCategoryErrorMessage,
+  isExpectedCategoryError,
+} from "@/utils/financeErrors";
 import { Ionicons } from "@expo/vector-icons";
 import { Plus } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -18,15 +22,15 @@ import {
 export default function BudgetScreen() {
   const {
     budgets,
-    transactionCategories,
+    categories,
     addBudget,
-    updateBudget,
     deleteBudget,
-    addTransactionCategory,
-    setBudgets,
-    loadTransactionCategories,
-    loadTransactions,
-    deleteTransactionCategory,
+    addCategory,
+    deleteCategory,
+    updateCategory,
+    loadCategories,
+    loadBudgets,
+    initialize,
   } = useFinanceStore();
   const { colors } = useThemeStore();
   const [showForm, setShowForm] = useState(false);
@@ -35,27 +39,14 @@ export default function BudgetScreen() {
   const [amount, setAmount] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    initialize();
     loadBudgets();
-    loadTransactions();
-    loadTransactionCategories();
-    console.log("Budget", transactionCategories);
+    loadCategories();
   }, []);
-
-  const loadBudgets = async () => {
-    try {
-      setIsLoading(true);
-      const budgetsFromDB = await getBudgetsFromDB();
-      setBudgets(budgetsFromDB);
-    } catch (error) {
-      console.error("Error loading budgets:", error);
-      Alert.alert("Error", "Failed to load budgets. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAddBudget = async () => {
     if (!category || !amount) {
@@ -90,18 +81,18 @@ export default function BudgetScreen() {
     try {
       setIsLoading(true);
       if (editingCategory) {
-        // Delete old category and add new one
-        await deleteTransactionCategory(editingCategory);
-        await addTransactionCategory(newCategory);
+        await updateCategory(editingCategory, newCategory);
         setEditingCategory(null);
       } else {
-        await addTransactionCategory(newCategory);
+        await addCategory(newCategory);
       }
       setNewCategory("");
       setShowCategoryModal(false);
     } catch (error) {
-      Alert.alert("Error", "Failed to add category. Please try again.");
-      console.error("Error adding category:", error);
+      Alert.alert("Error", getSaveCategoryErrorMessage(error));
+      if (!isExpectedCategoryError(error)) {
+        console.error("Error adding category:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -122,25 +113,53 @@ export default function BudgetScreen() {
   const handleDeleteCategory = async (category: string) => {
     try {
       setIsLoading(true);
-      await deleteTransactionCategory(category);
+      await deleteCategory(category);
     } catch (error) {
-      Alert.alert("Error", "Failed to delete category. Please try again.");
-      console.error("Error deleting category:", error);
+      Alert.alert("Error", getDeleteCategoryErrorMessage(error));
+      if (!isExpectedCategoryError(error)) {
+        console.error("Error deleting category:", error);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSelectCategory = (selectedCategory: string) => {
-    console.log("clicked budget");
     setCategory(selectedCategory);
-    setShowCategoryModal(false);
+    closeCategoryModal();
   };
 
   const handleEditCategory = (category: string) => {
+    setIsManagingCategories(true);
     setEditingCategory(category);
     setNewCategory(category);
     setShowCategoryModal(true);
+  };
+
+  const openCategoryModal = () => {
+    setIsManagingCategories(false);
+    setEditingCategory(null);
+    setNewCategory("");
+    setShowCategoryModal(true);
+  };
+
+  const openCategoryManager = () => {
+    setIsManagingCategories(true);
+    setEditingCategory(null);
+    setNewCategory("");
+  };
+
+  const closeCategoryManager = () => {
+    setIsManagingCategories(false);
+    setEditingCategory(null);
+    setNewCategory("");
+  };
+
+  const closeCategoryModal = () => {
+    setShowCategoryModal(false);
+    setIsManagingCategories(false);
+    setEditingCategory(null);
+    setNewCategory("");
   };
 
   const renderBudget = ({ item }: { item: Budget }) => {
@@ -224,7 +243,7 @@ export default function BudgetScreen() {
         <View style={[styles.form, { backgroundColor: colors.card, shadowColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.categoryButton, { borderColor: colors.border }]}
-            onPress={() => setShowCategoryModal(true)}
+            onPress={openCategoryModal}
           >
             <Text style={[styles.categoryButtonText, { color: colors.textSecondary }]}>
               {category || "Select Category"}
@@ -258,34 +277,57 @@ export default function BudgetScreen() {
         visible={showCategoryModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowCategoryModal(false)}
+        onRequestClose={closeCategoryModal}
       >
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {editingCategory ? "Edit Category" : "Add Category"}
+                {isManagingCategories
+                  ? editingCategory
+                    ? "Edit Category"
+                    : "Manage Categories"
+                  : "Select Category"}
               </Text>
-              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderActions}>
+                {!isManagingCategories && (
+                  <TouchableOpacity
+                    onPress={openCategoryManager}
+                    style={styles.headerActionButton}
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={22}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={closeCategoryModal}
+                  style={styles.headerActionButton}
+                >
+                  <Ionicons name="close" size={24} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-                placeholderTextColor={colors.textSecondary}
-                placeholder="Category name"
-                value={newCategory}
-                onChangeText={setNewCategory}
-                autoCapitalize="words"
-              />
-            </View>
+            {isManagingCategories && (
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                  placeholderTextColor={colors.textSecondary}
+                  placeholder="Category name"
+                  value={newCategory}
+                  onChangeText={setNewCategory}
+                  autoCapitalize="words"
+                />
+              </View>
+            )}
 
             <View style={styles.categoryList}>
               <Text style={[styles.categoryHeader, { color: colors.text }]}>Existing Categories</Text>
               <FlatList
-                data={transactionCategories}
+                data={categories}
                 renderItem={({ item }) => (
                   <View style={[styles.categoryItem, { borderBottomColor: colors.border }]}>
                     <TouchableOpacity
@@ -294,43 +336,65 @@ export default function BudgetScreen() {
                     >
                       <Text style={[styles.categoryText, { color: colors.text }]}>{item}</Text>
                     </TouchableOpacity>
-                    <View style={styles.categoryActions}>
-                      <TouchableOpacity
-                        onPress={() => handleEditCategory(item)}
-                        style={styles.categoryActionButton}
-                      >
-                        <Ionicons
-                          name="pencil-outline"
-                          size={20}
-                          color="#2563eb"
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteCategory(item)}
-                        style={styles.categoryActionButton}
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={20}
-                          color="#dc2626"
-                        />
-                      </TouchableOpacity>
-                    </View>
+                    {isManagingCategories && (
+                      <View style={styles.categoryActions}>
+                        <TouchableOpacity
+                          onPress={() => handleEditCategory(item)}
+                          style={styles.categoryActionButton}
+                        >
+                          <Ionicons
+                            name="pencil-outline"
+                            size={20}
+                            color="#2563eb"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteCategory(item)}
+                          style={styles.categoryActionButton}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={20}
+                            color="#dc2626"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 )}
                 keyExtractor={(item) => item}
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary }]}
-              onPress={handleAddCategory}
-              disabled={isLoading}
-            >
-              <Text style={styles.buttonText}>
-                {editingCategory ? "Update Category" : "Add Category"}
-              </Text>
-            </TouchableOpacity>
+            {isManagingCategories && (
+              <View style={styles.categoryButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.categorySubmitButton,
+                  { backgroundColor: colors.primary },
+                  isLoading && styles.disabledButton,
+                ]}
+                onPress={handleAddCategory}
+                disabled={isLoading}
+              >
+                <Text style={styles.buttonText}>
+                  {editingCategory ? "Update Category" : "Add Category"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.categoryCancelButton,
+                  { borderColor: colors.border },
+                ]}
+                onPress={closeCategoryManager}
+                disabled={isLoading}
+              >
+                <Text style={[styles.categoryCancelButtonText, { color: colors.textSecondary }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -498,14 +562,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
+    flex: 1,
     fontSize: 18,
     fontFamily: "Inter_600SemiBold",
     color: "#111827",
+  },
+  modalHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerActionButton: {
+    padding: 4,
   },
   inputContainer: {
     marginBottom: 16,
   },
   categoryList: {
+    flexShrink: 1,
+    maxHeight: 320,
     marginBottom: 16,
   },
   categoryHeader: {
@@ -534,11 +609,27 @@ const styles = StyleSheet.create({
   categoryActionButton: {
     padding: 4,
   },
-  button: {
-    backgroundColor: "#6366f1",
+  categoryButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  categorySubmitButton: {
+    flex: 1,
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
+  },
+  categoryCancelButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+  },
+  categoryCancelButtonText: {
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
   },
   buttonText: {
     color: "#ffffff",
