@@ -1,5 +1,7 @@
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFinanceStore } from '@/store/financeStore';
+import { useLanguageStore } from '@/store/languageStore';
+import '@/i18n';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +11,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 export default function RootLayout() {
   useFrameworkReady();
   const initialize = useFinanceStore((s) => s.initialize);
+  const loadLanguage = useLanguageStore((s) => s.loadLanguage);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -19,7 +22,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize();
-  }, [initialize]);
+    loadLanguage();
+  }, [initialize, loadLanguage]);
 
   if (!fontsLoaded) {
     return null;

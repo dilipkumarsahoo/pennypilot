@@ -1,6 +1,7 @@
 import { useFinanceStore } from '@/store/financeStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useCurrencyStore } from '@/store/currencyStore';
+import { useLanguageStore } from '@/store/languageStore';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Ionicons } from '@expo/vector-icons';
 import { endOfDay, format, isWithinInterval, startOfDay, subDays, subMonths, subYears } from 'date-fns';
@@ -8,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart, PieChart } from 'react-native-chart-kit';
+import { useTranslation } from 'react-i18next';
 
 type TimeFilter = 'week' | 'month' | 'year';
 
@@ -15,8 +17,14 @@ export default function OverviewScreen() {
   const { transactions } = useFinanceStore();
   const { colors } = useThemeStore();
   const { selectedCurrency } = useCurrencyStore();
+  const { selectedLanguage } = useLanguageStore();
+  const { t } = useTranslation();
+  
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+
+  const isRTL = !!selectedLanguage.isRTL;
+  const localeStr = selectedLanguage.code === 'en' ? 'en-US' : selectedLanguage.code;
 
   // Filter transactions based on selected time period
   const filteredTransactions = useMemo(() => {
@@ -94,7 +102,7 @@ export default function OverviewScreen() {
     const selectedDates = sortedDates.slice(-numPoints);
 
     return {
-      labels: selectedDates.map(date => format(new Date(date), 'MMM d')),
+      labels: selectedDates.map(date => new Date(date).toLocaleDateString(localeStr, { month: 'short', day: 'numeric' })),
       datasets: [
         {
           data: selectedDates.map(date => dates[date].income),
@@ -107,15 +115,19 @@ export default function OverviewScreen() {
           strokeWidth: 2,
         },
       ],
-      legend: ['Income', 'Expenses'],
+      legend: [t('income'), t('expenses')],
     };
-  }, [filteredTransactions]);
+  }, [filteredTransactions, localeStr, t]);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Financial Overview</Text>
-        <Text style={[styles.date, { color: colors.textSecondary }]}>{format(new Date(), 'MMMM yyyy')}</Text>
+        <Text style={[styles.title, { color: colors.text, textAlign: isRTL ? "right" : "left" }]}>
+          {t("dashboard")}
+        </Text>
+        <Text style={[styles.date, { color: colors.textSecondary, textAlign: isRTL ? "right" : "left" }]}>
+          {new Date().toLocaleDateString(localeStr, { month: 'long', year: 'numeric' })}
+        </Text>
       </View>
 
       <LinearGradient
@@ -124,12 +136,12 @@ export default function OverviewScreen() {
         end={{ x: 1, y: 1 }}
         style={[styles.balanceCard, { shadowColor: colors.primary }]}
       >
-
-
-        <View style={styles.balanceSection}>
-          <Text style={styles.balanceLabel}>Total Balance</Text>
-          <View style={styles.balanceRow}>
-            <Text style={styles.balanceAmount}>
+        <View style={[styles.balanceSection, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Text style={[styles.balanceLabel, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {t("total_balance")}
+          </Text>
+          <View style={[styles.balanceRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.balanceAmount, isRTL ? { marginLeft: 12, marginRight: 0 } : { marginRight: 12, marginLeft: 0 }]}>
               {isBalanceVisible ? formatCurrency(totalBalance) : '••••••••'}
             </Text>
             <TouchableOpacity onPress={() => setIsBalanceVisible(!isBalanceVisible)} style={styles.eyeIcon}>
@@ -140,29 +152,33 @@ export default function OverviewScreen() {
 
         <View style={styles.divider} />
 
-        <View style={styles.cardBottomRow}>
-          <View style={styles.monthlyStat}>
-            <Text style={styles.monthlyStatLabel}>Monthly Income</Text>
-            <View style={styles.monthlyStatValueRow}>
-              <Text style={styles.monthlyStatAmount}>
+        <View style={[styles.cardBottomRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.monthlyStat, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <Text style={[styles.monthlyStatLabel, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {t("monthly_income")}
+            </Text>
+            <View style={[styles.monthlyStatValueRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.monthlyStatAmount, isRTL ? { marginLeft: 8, marginRight: 0 } : { marginRight: 8, marginLeft: 0 }]}>
                 {formatCurrency(totalIncome)}
               </Text>
-              <View style={[styles.percentageBadge, { backgroundColor: 'rgba(20, 184, 166, 0.15)' }]}>
+              <View style={[styles.percentageBadge, { backgroundColor: 'rgba(20, 184, 166, 0.15)', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="arrow-up" size={10} color="#14b8a6" style={{ transform: [{ rotate: '45deg' }] }} />
-                <Text style={[styles.percentageText, { color: '#14b8a6' }]}>5.2%</Text>
+                <Text style={[styles.percentageText, { color: '#14b8a6', marginLeft: isRTL ? 0 : 2, marginRight: isRTL ? 2 : 0 }]}>5.2%</Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.monthlyStat}>
-            <Text style={styles.monthlyStatLabel}>Monthly Expense</Text>
-            <View style={styles.monthlyStatValueRow}>
-              <Text style={styles.monthlyStatAmount}>
+          <View style={[styles.monthlyStat, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <Text style={[styles.monthlyStatLabel, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {t("monthly_expense")}
+            </Text>
+            <View style={[styles.monthlyStatValueRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.monthlyStatAmount, isRTL ? { marginLeft: 8, marginRight: 0 } : { marginRight: 8, marginLeft: 0 }]}>
                 {formatCurrency(totalExpenses)}
               </Text>
-              <View style={[styles.percentageBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+              <View style={[styles.percentageBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)', flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Ionicons name="arrow-down" size={10} color="#ef4444" style={{ transform: [{ rotate: '-45deg' }] }} />
-                <Text style={[styles.percentageText, { color: '#ef4444' }]}>2.6%</Text>
+                <Text style={[styles.percentageText, { color: '#ef4444', marginLeft: isRTL ? 0 : 2, marginRight: isRTL ? 2 : 0 }]}>2.6%</Text>
               </View>
             </View>
           </View>
@@ -171,9 +187,11 @@ export default function OverviewScreen() {
 
       {categoryBreakdown.length > 0 && (
         <View style={[styles.chartContainer, { backgroundColor: colors.card, shadowColor: colors.border }]}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Expense Categories</Text>
-          <View style={styles.donutRow}>
-            <View style={styles.donutWrapper}>
+          <Text style={[styles.chartTitle, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t("expense_categories")}
+          </Text>
+          <View style={[styles.donutRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.donutWrapper, { direction: 'ltr' }]}>
               <PieChart
                 data={categoryBreakdown}
                 width={160}
@@ -189,18 +207,18 @@ export default function OverviewScreen() {
                 absolute
               />
               <View style={[styles.donutHole, { backgroundColor: colors.card, shadowColor: colors.border }]}>
-                <Text style={[styles.donutHoleLabel, { color: colors.textSecondary }]}>Total</Text>
+                <Text style={[styles.donutHoleLabel, { color: colors.textSecondary }]}>{t("total")}</Text>
                 <Text style={[styles.donutHoleValue, { color: colors.text }]}>
                   {formatCurrency(totalExpenses)}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.customLegend}>
+            <View style={[styles.customLegend, isRTL ? { paddingRight: 24, paddingLeft: 0 } : { paddingLeft: 24, paddingRight: 0 }]}>
               {categoryBreakdown.map((item, index) => (
-                <View key={index} style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-                  <Text style={[styles.legendName, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text>
+                <View key={index} style={[styles.legendItem, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <View style={[styles.legendColor, { backgroundColor: item.color }, isRTL ? { marginLeft: 10, marginRight: 0 } : { marginRight: 10, marginLeft: 0 }]} />
+                  <Text style={[styles.legendName, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.legendValue, { color: colors.text }]}>
                     {formatCurrency(item.amount)}
                   </Text>
@@ -212,15 +230,17 @@ export default function OverviewScreen() {
       )}
 
       <View style={[styles.chartContainer, { backgroundColor: colors.card, shadowColor: colors.border }]}>
-        <View style={styles.chartHeader}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Income vs Expenses</Text>
-          <View style={[styles.filterButtons, { backgroundColor: colors.background }]}>
+        <View style={[styles.chartHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 0 }]}>
+            {t("income_vs_expenses")}
+          </Text>
+          <View style={[styles.filterButtons, { backgroundColor: colors.background, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity
               style={[styles.filterButton, timeFilter === 'week' && [styles.activeFilter, { backgroundColor: colors.card, shadowColor: colors.border }]]}
               onPress={() => setTimeFilter('week')}
             >
               <Text style={[styles.filterText, { color: colors.textSecondary }, timeFilter === 'week' && [styles.activeFilterText, { color: colors.primary }]]}>
-                Week
+                {t("week")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -228,7 +248,7 @@ export default function OverviewScreen() {
               onPress={() => setTimeFilter('month')}
             >
               <Text style={[styles.filterText, { color: colors.textSecondary }, timeFilter === 'month' && [styles.activeFilterText, { color: colors.primary }]]}>
-                Month
+                {t("month")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -236,45 +256,45 @@ export default function OverviewScreen() {
               onPress={() => setTimeFilter('year')}
             >
               <Text style={[styles.filterText, { color: colors.textSecondary }, timeFilter === 'year' && [styles.activeFilterText, { color: colors.primary }]]}>
-                Year
+                {t("year")}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
-        <LineChart
-          data={lineChartData}
-          width={350}
-          height={220}
-          chartConfig={{
-            backgroundColor: colors.card,
-            backgroundGradientFrom: colors.card,
-            backgroundGradientTo: colors.card,
-            decimalPlaces: 0,
-            color: (opacity = 1) => colors.border,
-            labelColor: (opacity = 1) => colors.textSecondary,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: '4',
-              strokeWidth: '2',
-            },
-          }}
-          bezier
-          style={styles.chart}
-          withInnerLines={false}
-          withOuterLines={true}
-          withShadow={false}
-          withDots={true}
-          withScrollableDot={false}
-           yAxisLabel={selectedCurrency.symbol}
-          yAxisInterval={1}
-          withHorizontalLabels={true}
-          fromZero={true}
-        />
+        <View style={{ direction: 'ltr' }}>
+          <LineChart
+            data={lineChartData}
+            width={330}
+            height={220}
+            chartConfig={{
+              backgroundColor: colors.card,
+              backgroundGradientFrom: colors.card,
+              backgroundGradientTo: colors.card,
+              decimalPlaces: 0,
+              color: (opacity = 1) => colors.border,
+              labelColor: (opacity = 1) => colors.textSecondary,
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: '4',
+                strokeWidth: '2',
+              },
+            }}
+            bezier
+            style={styles.chart}
+            withInnerLines={false}
+            withOuterLines={true}
+            withShadow={false}
+            withDots={true}
+            withScrollableDot={false}
+            yAxisLabel={selectedCurrency.symbol}
+            yAxisInterval={1}
+            withHorizontalLabels={true}
+            fromZero={true}
+          />
+        </View>
       </View>
-
-
     </ScrollView>
   );
 }
@@ -290,7 +310,6 @@ function getColorForIndex(index: number): string {
     '#f59e0b', // Amber
     '#ef4444', // Red
     '#10b981', // Emerald
-    '#6366f1', // Indigo
     '#f97316', // Orange
   ];
   return colors[index % colors.length];
@@ -299,22 +318,18 @@ function getColorForIndex(index: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   header: {
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#f8fafc',
   },
   title: {
     fontSize: 24,
     fontFamily: 'Inter_700Bold',
-    color: '#0f172a',
   },
   date: {
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
-    color: '#64748b',
     marginTop: 4,
   },
   balanceCard: {
@@ -322,31 +337,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 24,
     borderRadius: 20,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 10,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  accountSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-  },
-  accountSelectorText: {
-    color: '#E2E8F0',
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-    marginRight: 6,
   },
   balanceSection: {
     marginBottom: 24,
@@ -358,7 +352,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   balanceRow: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
   balanceAmount: {
@@ -366,7 +359,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     color: '#ffffff',
     letterSpacing: -1,
-    marginRight: 12,
   },
   eyeIcon: {
     padding: 4,
@@ -377,7 +369,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardBottomRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
   },
   monthlyStat: {
@@ -390,17 +381,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   monthlyStatValueRow: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
   monthlyStatAmount: {
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
     color: '#ffffff',
-    marginRight: 8,
   },
   percentageBadge: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -409,14 +397,11 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
-    marginLeft: 2,
   },
   chartContainer: {
-    backgroundColor: '#ffffff',
     margin: 20,
     padding: 20,
     borderRadius: 16,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -426,7 +411,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   chartHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
@@ -434,11 +418,8 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    marginBottom: 16,
   },
   donutRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -454,10 +435,8 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -466,21 +445,17 @@ const styles = StyleSheet.create({
   donutHoleLabel: {
     fontSize: 12,
     fontFamily: 'Inter_500Medium',
-    color: '#64748b',
     marginBottom: 2,
   },
   donutHoleValue: {
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
-    color: '#0f172a',
   },
   customLegend: {
     flex: 1,
-    paddingLeft: 24,
     justifyContent: 'center',
   },
   legendItem: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
@@ -488,22 +463,17 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    marginRight: 10,
   },
   legendName: {
     flex: 1,
     fontSize: 13,
     fontFamily: 'Inter_500Medium',
-    color: '#64748b',
   },
   legendValue: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#0f172a',
   },
   filterButtons: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
     borderRadius: 8,
     padding: 2,
   },
@@ -513,8 +483,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   activeFilter: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
@@ -526,11 +494,8 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
-    color: '#6b7280',
   },
-  activeFilterText: {
-    color: '#6366f1',
-  },
+  activeFilterText: {},
   chart: {
     marginVertical: 8,
     borderRadius: 16,
